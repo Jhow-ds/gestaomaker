@@ -1,0 +1,3632 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduGame - Sistema Gamificado Educacional</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <style>
+        /* Mobile-first approach */
+        .sidebar-item:hover { background-color: #475569; transform: translateX(4px); }
+        .sidebar-item { transition: all 0.2s ease; }
+        
+        .modal { display: none; }
+        .modal.active { display: flex; }
+        
+        .student-card { transition: all 0.3s ease; }
+        .student-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        
+        /* Mobile Menu System */
+        .mobile-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #1e293b;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .hamburger-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease;
+        }
+        
+        .hamburger-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        .hamburger-icon {
+            width: 24px;
+            height: 18px;
+            position: relative;
+            transform: rotate(0deg);
+            transition: 0.3s ease-in-out;
+        }
+        
+        .hamburger-icon span {
+            display: block;
+            position: absolute;
+            height: 3px;
+            width: 100%;
+            background: white;
+            border-radius: 3px;
+            opacity: 1;
+            left: 0;
+            transform: rotate(0deg);
+            transition: 0.25s ease-in-out;
+        }
+        
+        .hamburger-icon span:nth-child(1) { top: 0px; }
+        .hamburger-icon span:nth-child(2) { top: 7px; }
+        .hamburger-icon span:nth-child(3) { top: 14px; }
+        
+        .hamburger-btn.active .hamburger-icon span:nth-child(1) {
+            top: 7px;
+            transform: rotate(135deg);
+        }
+        
+        .hamburger-btn.active .hamburger-icon span:nth-child(2) {
+            opacity: 0;
+            left: -60px;
+        }
+        
+        .hamburger-btn.active .hamburger-icon span:nth-child(3) {
+            top: 7px;
+            transform: rotate(-135deg);
+        }
+        
+        .mobile-title {
+            color: white;
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+        
+        /* Mobile Sidebar */
+        .mobile-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 280px;
+            height: 100vh;
+            background: #1e293b;
+            z-index: 1100;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+        
+        .mobile-sidebar.open {
+            transform: translateX(0);
+        }
+        
+        .mobile-sidebar-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #334155;
+            background: #0f172a;
+        }
+        
+        .mobile-sidebar-title {
+            color: white;
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .mobile-sidebar-nav {
+            padding: 1rem 0;
+        }
+        
+        .mobile-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1.5rem;
+            color: #cbd5e1;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            border: none;
+            background: none;
+            width: 100%;
+            text-align: left;
+            font-size: 0.95rem;
+        }
+        
+        .mobile-nav-item:hover {
+            background: #334155;
+            color: white;
+            transform: translateX(4px);
+        }
+        
+        .mobile-nav-item.active {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .mobile-nav-item i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        /* Mobile Overlay */
+        .mobile-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1050;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .mobile-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        /* Desktop Sidebar System */
+        .desktop-sidebar-trigger {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 20px;
+            height: 100vh;
+            z-index: 60;
+            background: transparent;
+        }
+        
+        .desktop-sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 16rem;
+            background: #1e293b;
+            color: white;
+            shadow: 0 10px 25px rgba(0,0,0,0.1);
+            z-index: 40;
+            transform: translateX(-100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .desktop-sidebar.show {
+            transform: translateX(0);
+        }
+        
+        /* Content adjustments */
+        .main-content {
+            padding-top: 60px; /* Space for mobile header */
+        }
+        
+        /* Responsive notifications */
+        .notification { 
+            position: fixed; 
+            top: 70px; /* Below mobile header */
+            right: 1rem; 
+            left: 1rem;
+            z-index: 1000; 
+            transform: translateY(-100px);
+            transition: transform 0.3s ease;
+        }
+        
+        .notification.show { 
+            transform: translateY(0); 
+        }
+        
+        /* Modal responsive styles */
+        .modal-content {
+            width: 95%;
+            max-width: 28rem;
+            max-height: 90vh;
+            margin: auto;
+            overflow-y: auto;
+        }
+        
+        /* Desktop styles */
+        @media (min-width: 1024px) {
+            .mobile-header {
+                display: none;
+            }
+            
+            .main-content {
+                padding-top: 0;
+                transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            }
+            
+            .mobile-sidebar {
+                display: none;
+            }
+            
+            .mobile-overlay {
+                display: none;
+            }
+            
+            .notification {
+                top: 1.25rem;
+                left: auto;
+                right: 1.25rem;
+                min-width: 300px;
+                transform: translateX(400px);
+            }
+            
+            .notification.show {
+                transform: translateX(0);
+            }
+        }
+        
+        /* Tablet adjustments */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            .modal-content {
+                width: 80%;
+                max-width: 32rem;
+            }
+            
+            .mobile-sidebar {
+                width: 320px;
+            }
+        }
+        
+        /* Small mobile adjustments */
+        @media (max-width: 480px) {
+            .modal-content {
+                width: 98%;
+                margin: 0.5rem auto;
+                max-height: 95vh;
+            }
+            
+            .mobile-sidebar {
+                width: 260px;
+            }
+            
+            .mobile-title {
+                font-size: 1rem;
+            }
+        }
+
+        /* Animações personalizadas */
+        @keyframes confeteFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% {
+                transform: translate3d(0,0,0);
+            }
+            40%, 43% {
+                transform: translate3d(0, -30px, 0);
+            }
+            70% {
+                transform: translate3d(0, -15px, 0);
+            }
+            90% {
+                transform: translate3d(0, -4px, 0);
+            }
+        }
+
+        .animate-fadeIn {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .animate-slideInUp {
+            animation: slideInUp 0.6s ease-out;
+        }
+
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+
+        /* Estilos para cards da loja */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .line-clamp-3 {
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Hover effect para cards da loja */
+        .bg-white:hover .group-hover\:opacity-100 {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 font-sans">
+    <!-- Mobile Header -->
+    <header class="mobile-header lg:hidden">
+        <button id="mobileMenuBtn" class="hamburger-btn">
+            <div class="hamburger-icon">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </button>
+        <h1 class="mobile-title">🎮 EduGame Manager</h1>
+        <div></div> <!-- Spacer for centering -->
+    </header>
+
+    <!-- Mobile Sidebar -->
+    <nav id="mobileSidebar" class="mobile-sidebar lg:hidden">
+        <div class="mobile-sidebar-header">
+            <div class="mobile-sidebar-title">
+                🎮 EduGame Manager
+            </div>
+        </div>
+        <div class="mobile-sidebar-nav">
+            <button class="mobile-nav-item" onclick="showSection('alunos')">
+                <i class="fas fa-users"></i>
+                <span>Alunos</span>
+            </button>
+            <button class="mobile-nav-item" onclick="showSection('chamada')">
+                <i class="fas fa-clipboard-check"></i>
+                <span>Chamada</span>
+            </button>
+            <button class="mobile-nav-item" onclick="showSection('missoes')">
+                <i class="fas fa-trophy"></i>
+                <span>Missões</span>
+            </button>
+            <button class="mobile-nav-item" onclick="showSection('relatorios')">
+                <i class="fas fa-chart-bar"></i>
+                <span>Relatórios</span>
+            </button>
+            <button class="mobile-nav-item" onclick="showSection('loja')">
+                <i class="fas fa-store"></i>
+                <span>Loja</span>
+            </button>
+            <button class="mobile-nav-item" onclick="showSection('ferramentas')">
+                <i class="fas fa-tools"></i>
+                <span>Ferramentas</span>
+            </button>
+            <button class="mobile-nav-item" onclick="showSection('cadastroMassa')">
+                <i class="fas fa-users-cog"></i>
+                <span>Cadastro em Massa</span>
+            </button>
+            <button class="mobile-nav-item" onclick="importData()">
+                <i class="fas fa-file-import"></i>
+                <span>Importar Dados</span>
+            </button>
+            <button class="mobile-nav-item" onclick="exportData()">
+                <i class="fas fa-file-export"></i>
+                <span>Exportar Dados</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Overlay -->
+    <div id="mobileOverlay" class="mobile-overlay lg:hidden"></div>
+
+    <!-- Desktop Sidebar Trigger Zone -->
+    <div id="desktopSidebarTrigger" class="desktop-sidebar-trigger hidden lg:block"></div>
+
+    <!-- Desktop Sidebar -->
+    <div id="desktopSidebar" class="desktop-sidebar hidden lg:block">
+        <div class="p-6 border-b border-slate-700">
+            <h1 class="text-xl font-bold">🎮 EduGame Manager</h1>
+        </div>
+        <nav class="mt-6">
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center space-x-3" onclick="showSection('alunos')">
+                <i class="fas fa-users"></i><span>Alunos</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center space-x-3" onclick="showSection('chamada')">
+                <i class="fas fa-clipboard-check"></i><span>Chamada</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center space-x-3" onclick="showSection('missoes')">
+                <i class="fas fa-trophy"></i><span>Missões</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center space-x-3" onclick="showSection('relatorios')">
+                <i class="fas fa-chart-bar"></i><span>Relatórios</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center space-x-3" onclick="showSection('loja')">
+                <i class="fas fa-store"></i><span>Loja</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center space-x-3" onclick="showSection('ferramentas')">
+                <i class="fas fa-tools"></i><span>Ferramentas</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center space-x-3" onclick="showSection('cadastroMassa')">
+                <i class="fas fa-users-cog"></i><span>Cadastro em Massa</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center space-x-3" onclick="importData()">
+                <i class="fas fa-file-import"></i><span>Importar Dados</span>
+            </div>
+            <div class="sidebar-item px-6 py-3 cursor-pointer flex items-center space-x-3" onclick="exportData()">
+                <i class="fas fa-file-export"></i><span>Exportar Dados</span>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer"></div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="fixed inset-0 bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md transform transition-all duration-300">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl mx-auto mb-4 flex items-center justify-center">
+                    <i class="fas fa-graduation-cap text-white text-3xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">EduGame</h1>
+                <p class="text-gray-600">Sistema Gamificado Educacional</p>
+            </div>
+
+            <!-- Login do Professor -->
+            <div id="professorLogin" class="space-y-6">
+                <div class="text-center">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">Área do Professor</h2>
+                    <p class="text-sm text-gray-600">Faça login para gerenciar suas turmas</p>
+                </div>
+                
+                <button id="loginProfessorBtn" class="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    <i class="fab fa-google mr-2"></i>
+                    Entrar com Google (Professor)
+                </button>
+
+                <div class="relative">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">ou</span>
+                    </div>
+                </div>
+
+                <button onclick="showStudentLogin()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-user-graduate mr-2"></i>
+                    Área do Aluno
+                </button>
+            </div>
+
+            <!-- Login do Aluno -->
+            <div id="studentLogin" class="space-y-6 hidden">
+                <div class="text-center">
+                    <button onclick="showProfessorLogin()" class="text-blue-600 hover:text-blue-800 mb-4">
+                        <i class="fas fa-arrow-left mr-1"></i> Voltar
+                    </button>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">Área do Aluno</h2>
+                    <p class="text-sm text-gray-600">Use seu email @aluno.barueri.br</p>
+                </div>
+                
+                <button id="loginAlunoBtn" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    <i class="fab fa-google mr-2"></i>
+                    Entrar com Google (Aluno)
+                </button>
+            </div>
+
+            <div class="mt-8 text-center text-xs text-gray-500">
+                <p>Sistema desenvolvido para Barueri</p>
+                <p class="mt-1">Versão 2.0 - Multi-usuário</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Student Dashboard -->
+    <div id="studentDashboard" class="hidden min-h-screen bg-gradient-to-br from-emerald-50 to-teal-50">
+        <!-- Student Header -->
+        <header class="bg-white shadow-sm border-b border-emerald-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-xl flex items-center justify-center">
+                            <i class="fas fa-user-graduate text-white"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800">Meu Perfil</h1>
+                            <p class="text-sm text-gray-600" id="studentWelcome">Bem-vindo!</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="showStudentSection('perfil')" class="student-nav-btn bg-emerald-100 text-emerald-700 px-4 py-2 rounded-lg font-medium transition-colors hover:bg-emerald-200">
+                            <i class="fas fa-user mr-2"></i>Perfil
+                        </button>
+                        <button onclick="showStudentSection('loja')" class="student-nav-btn text-gray-600 px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-store mr-2"></i>Loja
+                        </button>
+                        <button onclick="showStudentSection('ranking')" class="student-nav-btn text-gray-600 px-4 py-2 rounded-lg font-medium transition-colors hover:bg-gray-100">
+                            <i class="fas fa-trophy mr-2"></i>Ranking
+                        </button>
+                        <button onclick="logout()" class="text-red-600 hover:text-red-800 px-3 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Student Content -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Student Profile Section -->
+            <div id="studentPerfil" class="student-section">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Profile Card -->
+                    <div class="lg:col-span-1">
+                        <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+                            <div class="w-32 h-32 mx-auto mb-4 rounded-full overflow-hidden border-4 border-emerald-200">
+                                <img id="studentAvatar" src="" alt="Avatar" class="w-full h-full object-cover">
+                            </div>
+                            <h2 id="studentName" class="text-2xl font-bold text-gray-800 mb-2">Nome do Aluno</h2>
+                            <p id="studentClass" class="text-emerald-600 font-medium mb-4">Turma</p>
+                            <div id="studentTitle" class="inline-block bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+                                🔰 Novato
+                            </div>
+                            
+                            <!-- Stats -->
+                            <div class="grid grid-cols-2 gap-4 mb-6">
+                                <div class="bg-amber-50 rounded-xl p-4">
+                                    <div class="text-2xl mb-1">💰</div>
+                                    <div id="studentCoins" class="text-2xl font-bold text-amber-600">0</div>
+                                    <div class="text-xs text-amber-700">Moedas</div>
+                                </div>
+                                <div class="bg-purple-50 rounded-xl p-4">
+                                    <div class="text-2xl mb-1">⭐</div>
+                                    <div id="studentStars" class="text-2xl font-bold text-purple-600">0</div>
+                                    <div class="text-xs text-purple-700">Estrelas</div>
+                                </div>
+                            </div>
+
+                            <!-- Progress -->
+                            <div class="text-left">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-600">Progresso</span>
+                                    <span id="studentProgress" class="text-sm font-bold text-gray-800">0 pts</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-3">
+                                    <div id="studentProgressBar" class="bg-gradient-to-r from-emerald-400 to-teal-500 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Activity Feed -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-2xl shadow-lg p-6">
+                            <h3 class="text-xl font-bold text-gray-800 mb-6">📈 Minha Atividade</h3>
+                            <div id="studentActivity" class="space-y-4">
+                                <!-- Activity items will be loaded here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Store Section -->
+            <div id="studentLoja" class="student-section hidden">
+                <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">🛒 Loja</h2>
+                        <div class="flex items-center space-x-4">
+                            <div class="bg-amber-100 text-amber-800 px-4 py-2 rounded-full font-semibold">
+                                💰 <span id="studentCoinsInStore">0</span> moedas
+                            </div>
+                        </div>
+                    </div>
+                    <div id="studentStoreItems" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Store items will be loaded here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Student Ranking Section -->
+            <div id="studentRanking" class="student-section hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Ranking por Moedas -->
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <span class="text-2xl mr-2">💰</span>
+                            Ranking - Moedas
+                        </h3>
+                        <div id="rankingCoins" class="space-y-3">
+                            <!-- Ranking items will be loaded here -->
+                        </div>
+                    </div>
+
+                    <!-- Ranking por Progresso -->
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+                            <span class="text-2xl mr-2">📈</span>
+                            Ranking - Progresso
+                        </h3>
+                        <div id="rankingProgress" class="space-y-3">
+                            <!-- Ranking items will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content (Professor Dashboard) -->
+    <div id="mainContent" class="main-content min-h-screen p-4 lg:p-0 hidden">
+        <!-- Alunos Section -->
+        <div id="alunos" class="section p-2 sm:p-4 lg:p-8">
+            <div class="bg-white rounded-lg shadow-md p-3 sm:p-4 lg:p-6 mb-4 lg:mb-6">
+                <div class="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 mb-4 lg:mb-6">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-800">👥 Gerenciar Alunos</h2>
+                    <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 lg:space-x-4">
+                        <select id="filtroTurma" class="px-3 py-2 text-sm border rounded-lg" onchange="filtrarAlunos()">
+                            <option value="">Todas as Turmas</option>
+                        </select>
+                        <input type="text" id="pesquisarAluno" placeholder="Pesquisar aluno..." class="px-3 py-2 text-sm border rounded-lg" oninput="filtrarAlunos()">
+                        <button onclick="openModal('modalCadastroAluno')" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 text-sm rounded-lg transition-colors">
+                            <i class="fas fa-plus"></i> <span class="hidden sm:inline">Novo Aluno</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="listaAlunos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6"></div>
+            </div>
+        </div>
+
+        <!-- Chamada Section -->
+        <div id="chamada" class="section p-2 sm:p-4 lg:p-8 hidden">
+            <div class="bg-white rounded-lg shadow-md p-3 sm:p-4 lg:p-6">
+                <div class="flex flex-col space-y-4 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 mb-4 lg:mb-6">
+                    <h2 class="text-xl sm:text-2xl font-bold text-gray-800">📋 Chamada</h2>
+                    <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2 lg:space-x-4">
+                        <select id="turmaChamada" class="px-3 py-2 text-sm border rounded-lg">
+                            <option value="">Selecionar Turma</option>
+                        </select>
+                        <button onclick="novaChamada()" class="bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 text-sm rounded-lg transition-colors">
+                            <i class="fas fa-plus"></i> <span class="hidden sm:inline">Nova Chamada</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="chamadaContent"></div>
+                <div id="historicoChamadas" class="mt-4 lg:mt-8"></div>
+            </div>
+        </div>
+
+        <!-- Missões Section -->
+        <div id="missoes" class="section p-8 hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">🏆 Missões</h2>
+                    <button onclick="openModal('modalMissao')" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-plus"></i> Nova Missão
+                    </button>
+                </div>
+                <div id="listaMissoes" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+        </div>
+
+        <!-- Relatórios Section -->
+        <div id="relatorios" class="section p-8 hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">📊 Relatórios</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="relatoriosContent"></div>
+            </div>
+        </div>
+
+        <!-- Loja Section -->
+        <div id="loja" class="section p-8 hidden">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">🛒 Loja</h2>
+                    <div class="flex space-x-4">
+                        <button onclick="toggleHistoricoCompras()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-history"></i> Histórico
+                        </button>
+                        <button onclick="openModal('modalProduto')" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-plus"></i> Novo Item
+                        </button>
+                        <button onclick="exportarLoja()" class="bg-slate-600 hover:bg-slate-700 text-white px-4 py-2 rounded-lg transition-colors">
+                            <i class="fas fa-download"></i> Exportar
+                        </button>
+                    </div>
+                </div>
+                <div id="listaProdutos" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            </div>
+            
+            <!-- Histórico de Compras -->
+            <div id="historicoCompras" class="bg-white rounded-lg shadow-md p-6 hidden">
+                <h3 class="text-xl font-bold text-gray-800 mb-4">📋 Histórico de Compras</h3>
+                <div id="listaCompras"></div>
+            </div>
+        </div>
+
+        <!-- Cadastro em Massa Section -->
+        <div id="cadastroMassa" class="section p-8 hidden">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">👥 Cadastro de Alunos em Massa</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Selecionar Turma:</label>
+                        <select id="turmaCadastroMassa" class="w-full px-4 py-2 border rounded-lg mb-4">
+                            <option value="">Selecionar Turma</option>
+                        </select>
+                        
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Nomes dos Alunos (um por linha):</label>
+                        <textarea id="nomesAlunos" placeholder="João Silva&#10;Maria Santos&#10;Pedro Oliveira&#10;Ana Costa" 
+                                  class="w-full h-64 px-4 py-2 border rounded-lg resize-none"></textarea>
+                        
+                        <div class="mt-4">
+                            <button onclick="cadastrarAlunosEmMassa()" class="w-full bg-slate-700 hover:bg-slate-800 text-white px-6 py-3 rounded-lg transition-colors">
+                                <i class="fas fa-users"></i> Cadastrar Alunos
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="text-lg font-semibold mb-4">📋 Instruções:</h3>
+                        <ul class="space-y-2 text-sm text-gray-700">
+                            <li>• Digite um nome por linha</li>
+                            <li>• Selecione a turma antes de cadastrar</li>
+                            <li>• Os alunos serão criados com valores padrão (0 moedas, 0 estrelas)</li>
+                            <li>• Avatares serão atribuídos automaticamente</li>
+                            <li>• Use o botão "Exportar Dados" na barra lateral para backup completo</li>
+                        </ul>
+                        
+                        <div id="resultadoCadastro" class="mt-4 p-4 bg-white rounded border hidden">
+                            <h4 class="font-semibold text-green-600 mb-2">✅ Resultado do Cadastro:</h4>
+                            <div id="detalhesResultado"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ferramentas Section -->
+        <div id="ferramentas" class="section p-2 sm:p-4 lg:p-8 hidden">
+            <div class="bg-white rounded-lg shadow-md p-3 sm:p-4 lg:p-6">
+                <h2 class="text-xl sm:text-2xl font-bold text-gray-800 mb-4 lg:mb-6">🔧 Ferramentas</h2>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
+                    <!-- Sorteio de Alunos -->
+                    <div class="bg-gray-50 p-4 lg:p-6 rounded-lg">
+                        <h3 class="text-lg font-semibold mb-4">🎲 Sorteio de Alunos</h3>
+                        <div class="space-y-4">
+                            <select id="turmaSorteio" class="w-full px-3 py-2 text-sm border rounded-lg">
+                                <option value="">Selecionar Turma</option>
+                            </select>
+                            
+                            <!-- Configurações do Sorteio -->
+                            <div class="bg-white p-3 rounded border">
+                                <h4 class="text-sm font-medium mb-3">⚙️ Configurações</h4>
+                                <div class="space-y-3">
+                                    <label class="flex items-center space-x-2 text-sm">
+                                        <input type="checkbox" id="eliminarSorteados" checked class="rounded">
+                                        <span>Eliminar nomes já sorteados</span>
+                                    </label>
+                                    <div class="flex items-center space-x-2">
+                                        <label class="text-sm font-medium">Número de equipes:</label>
+                                        <input type="number" id="numeroEquipes" value="2" min="2" max="10" class="w-16 px-2 py-1 text-sm border rounded">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Botões de Sorteio -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <button onclick="sortearIndividual()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 text-sm rounded-lg transition-colors">
+                                    🎯 Individual
+                                </button>
+                                <button onclick="sortearEquipe()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 text-sm rounded-lg transition-colors">
+                                    👥 Equipes
+                                </button>
+                            </div>
+                            
+                            <!-- Botão Reset -->
+                            <button onclick="resetarSorteios()" class="w-full bg-gray-500 hover:bg-gray-600 text-white px-3 py-2 text-sm rounded-lg transition-colors">
+                                🔄 Resetar Sorteios
+                            </button>
+                            
+                            <!-- Lista de Sorteados -->
+                            <div id="listaSorteados" class="hidden bg-white p-3 rounded border">
+                                <h4 class="text-sm font-medium mb-2">📋 Já Sorteados:</h4>
+                                <div id="nomesSorteados" class="text-xs text-gray-600"></div>
+                            </div>
+                            
+                            <!-- Resultado do Sorteio -->
+                            <div id="resultadoSorteio" class="bg-white rounded border min-h-[60px] flex items-center justify-center text-gray-500 text-sm"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Aplicar Recompensas -->
+                    <div class="bg-gray-50 p-4 lg:p-6 rounded-lg">
+                        <h3 class="text-lg font-semibold mb-4">💰 Aplicar Recompensas</h3>
+                        <div class="space-y-4">
+                            <select id="turmaRecompensa" class="w-full px-3 py-2 text-sm border rounded-lg">
+                                <option value="">Selecionar Turma</option>
+                            </select>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <input type="number" id="valorMoedas" placeholder="Moedas" class="w-full px-3 py-2 text-sm border rounded-lg">
+                                <input type="number" id="valorEstrelas" placeholder="Estrelas" class="w-full px-3 py-2 text-sm border rounded-lg">
+                            </div>
+                            <button onclick="aplicarRecompensas()" class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 text-sm rounded-lg transition-colors">
+                                ⚡ Aplicar aos Presentes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Frase do Dia -->
+                <div class="mt-4 lg:mt-6 bg-gray-50 p-4 lg:p-6 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-4">💭 Frase do Dia</h3>
+                    <div id="fraseDia" class="text-center italic text-gray-700 p-3 lg:p-4 bg-white rounded border text-sm lg:text-base"></div>
+                    <button onclick="buscarFrase()" class="mt-3 lg:mt-4 w-full sm:w-auto bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 text-sm rounded-lg transition-colors">
+                        ✨ Nova Frase
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Cadastro Aluno -->
+    <div id="modalCadastroAluno" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="modal-content bg-white rounded-lg p-4 sm:p-6">
+            <h3 class="text-lg font-semibold mb-4">Cadastrar Novo Aluno</h3>
+            <div class="space-y-4">
+                <input type="text" id="nomeAluno" placeholder="Nome do aluno" class="w-full px-4 py-2 border rounded-lg">
+                <select id="turmaAluno" class="w-full px-4 py-2 border rounded-lg">
+                    <option value="">Selecionar Turma</option>
+                </select>
+                <input type="date" id="aniversarioAluno" class="w-full px-4 py-2 border rounded-lg">
+                <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                    <button onclick="salvarAluno()" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex-1 transition-colors text-sm">Salvar</button>
+                    <button onclick="closeModal('modalCadastroAluno')" class="bg-slate-500 hover:bg-slate-600 text-white px-4 py-2 rounded-lg flex-1 transition-colors text-sm">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Editar Aluno -->
+    <div id="modalEditarAluno" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="modal-content bg-white rounded-lg p-4 sm:p-6">
+            <h3 class="text-lg font-semibold mb-4">Editar Aluno</h3>
+            <div class="space-y-4">
+                <input type="text" id="editNomeAluno" placeholder="Nome do aluno" class="w-full px-4 py-2 border rounded-lg">
+                <input type="date" id="editAniversarioAluno" class="w-full px-4 py-2 border rounded-lg">
+                <input type="number" id="editProgressoAluno" placeholder="Progresso" class="w-full px-4 py-2 border rounded-lg">
+                <div class="flex flex-col space-y-2 sm:flex-row sm:space-y-0 sm:space-x-2">
+                    <button onclick="salvarEdicaoAluno()" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg flex-1 transition-colors text-sm">Salvar</button>
+                    <button onclick="closeModal('modalEditarAluno')" class="bg-slate-500 hover:bg-slate-600 text-white px-4 py-2 rounded-lg flex-1 transition-colors text-sm">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Missão -->
+    <div id="modalMissao" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 p-4">
+        <div class="modal-content bg-white rounded-lg p-4 sm:p-6">
+            <h3 class="text-lg font-semibold mb-4">Nova Missão</h3>
+            <div class="space-y-4">
+                <input type="text" id="tituloMissao" placeholder="Título da missão" class="w-full px-4 py-2 border rounded-lg">
+                <textarea id="descricaoMissao" placeholder="Descrição" class="w-full px-4 py-2 border rounded-lg h-20"></textarea>
+                <input type="number" id="recompensaMissao" placeholder="Recompensa (moedas)" class="w-full px-4 py-2 border rounded-lg">
+                <select id="categoriaMissao" class="w-full px-4 py-2 border rounded-lg">
+                    <option value="individual">Individual</option>
+                    <option value="turma">Turma</option>
+                    <option value="recuperacao">Recuperação</option>
+                </select>
+                <select id="dificuldadeMissao" class="w-full px-4 py-2 border rounded-lg">
+                    <option value="facil">Fácil</option>
+                    <option value="media">Média</option>
+                    <option value="dificil">Difícil</option>
+                </select>
+                <div class="flex space-x-2">
+                    <button onclick="salvarMissao()" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex-1">Salvar</button>
+                    <button onclick="closeModal('modalMissao')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex-1">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Produto -->
+    <div id="modalProduto" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+            <h3 class="text-lg font-semibold mb-4">Novo Item da Loja</h3>
+            <div class="space-y-4">
+                <input type="text" id="nomeProduto" placeholder="Nome do produto" class="w-full px-4 py-2 border rounded-lg">
+                <textarea id="descricaoProduto" placeholder="Descrição" class="w-full px-4 py-2 border rounded-lg h-20"></textarea>
+                <input type="url" id="imagemProduto" placeholder="URL da imagem" class="w-full px-4 py-2 border rounded-lg">
+                <input type="number" id="valorProduto" placeholder="Valor (moedas)" class="w-full px-4 py-2 border rounded-lg">
+                <input type="text" id="categoriaProduto" placeholder="Categoria" class="w-full px-4 py-2 border rounded-lg">
+                <div class="flex space-x-2">
+                    <button onclick="salvarProduto()" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex-1">Salvar</button>
+                    <button onclick="closeModal('modalProduto')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex-1">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Venda -->
+    <div id="modalVenda" class="modal fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-6 w-96 max-h-96 overflow-y-auto">
+            <h3 class="text-lg font-semibold mb-4">🛒 Vender Produto</h3>
+            <div id="produtoVendaInfo" class="mb-4 p-4 bg-gray-50 rounded-lg"></div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Selecionar Aluno:</label>
+                    <select id="alunoComprador" class="w-full px-4 py-2 border rounded-lg">
+                        <option value="">Selecionar Aluno</option>
+                    </select>
+                </div>
+                <div id="infoAluno" class="hidden p-3 bg-blue-50 rounded-lg">
+                    <div class="text-sm">
+                        <div>💰 Moedas disponíveis: <span id="moedasAluno" class="font-semibold">0</span></div>
+                        <div id="statusCompra" class="mt-2"></div>
+                    </div>
+                </div>
+                <div class="flex space-x-2">
+                    <button onclick="confirmarVenda()" id="btnConfirmarVenda" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex-1" disabled>Confirmar Venda</button>
+                    <button onclick="closeModal('modalVenda')" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg flex-1">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            // Substitua pelas suas configurações do Firebase
+            apiKey: "your-api-key",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // Global variables
+        let currentUser = null;
+        let currentUserType = null; // 'professor' or 'student'
+        let currentSection = 'alunos';
+        let currentEditingStudent = null;
+        let currentEditingMission = null;
+        let currentEditingProduct = null;
+        let alunosSorteados = [];
+
+        // Authentication functions
+        function showStudentLogin() {
+            document.getElementById('professorLogin').classList.add('hidden');
+            document.getElementById('studentLogin').classList.remove('hidden');
+        }
+
+        function showProfessorLogin() {
+            document.getElementById('studentLogin').classList.add('hidden');
+            document.getElementById('professorLogin').classList.remove('hidden');
+        }
+
+        async function loginProfessor() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({
+                    hd: 'barueri.br' // Restringir para domínio do professor
+                });
+                
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                
+                // Verificar se é um email de professor válido
+                if (!user.email.endsWith('@barueri.br')) {
+                    await auth.signOut();
+                    showNotification('Acesso restrito a professores (@barueri.br)', 'error');
+                    return;
+                }
+
+                currentUser = user;
+                currentUserType = 'professor';
+                showProfessorDashboard();
+                
+            } catch (error) {
+                console.error('Erro no login do professor:', error);
+                showNotification('Erro ao fazer login. Tente novamente.', 'error');
+            }
+        }
+
+        async function loginAluno() {
+            try {
+                const provider = new firebase.auth.GoogleAuthProvider();
+                provider.setCustomParameters({
+                    hd: 'aluno.barueri.br' // Restringir para domínio do aluno
+                });
+                
+                const result = await auth.signInWithPopup(provider);
+                const user = result.user;
+                
+                // Verificar se é um email de aluno válido
+                if (!user.email.endsWith('@aluno.barueri.br')) {
+                    await auth.signOut();
+                    showNotification('Acesso restrito a alunos (@aluno.barueri.br)', 'error');
+                    return;
+                }
+
+                currentUser = user;
+                currentUserType = 'student';
+                await initializeStudentData();
+                showStudentDashboard();
+                
+            } catch (error) {
+                console.error('Erro no login do aluno:', error);
+                showNotification('Erro ao fazer login. Tente novamente.', 'error');
+            }
+        }
+
+        async function logout() {
+            try {
+                await auth.signOut();
+                currentUser = null;
+                currentUserType = null;
+                showLoginScreen();
+            } catch (error) {
+                console.error('Erro ao fazer logout:', error);
+            }
+        }
+
+        function showLoginScreen() {
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('studentDashboard').classList.add('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+            showProfessorLogin();
+        }
+
+        function showProfessorDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('studentDashboard').classList.add('hidden');
+            document.getElementById('mainContent').classList.remove('hidden');
+            initializeData();
+            populateSelects();
+            showSection('alunos');
+        }
+
+        function showStudentDashboard() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('mainContent').classList.add('hidden');
+            document.getElementById('studentDashboard').classList.remove('hidden');
+            loadStudentData();
+            showStudentSection('perfil');
+        }
+
+        // Student functions
+        async function initializeStudentData() {
+            if (!currentUser) return;
+
+            const studentRef = db.collection('students').doc(currentUser.uid);
+            const studentDoc = await studentRef.get();
+
+            if (!studentDoc.exists) {
+                // Criar perfil do aluno se não existir
+                const studentData = {
+                    uid: currentUser.uid,
+                    email: currentUser.email,
+                    name: currentUser.displayName || 'Aluno',
+                    avatar: currentUser.photoURL || gerarAvatarPorNome(currentUser.displayName || 'Aluno'),
+                    turma: extractClassFromEmail(currentUser.email),
+                    moedas: 0,
+                    estrelas: 0,
+                    progresso: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                await studentRef.set(studentData);
+            } else {
+                // Atualizar último login
+                await studentRef.update({
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }
+        }
+
+        function extractClassFromEmail(email) {
+            // Extrair turma do email do aluno (ex: joao.silva.m21@aluno.barueri.br -> M21)
+            const parts = email.split('@')[0].split('.');
+            const lastPart = parts[parts.length - 1];
+            return lastPart.toUpperCase();
+        }
+
+        async function loadStudentData() {
+            if (!currentUser) return;
+
+            try {
+                const studentDoc = await db.collection('students').doc(currentUser.uid).get();
+                if (studentDoc.exists) {
+                    const data = studentDoc.data();
+                    
+                    // Atualizar interface do aluno
+                    document.getElementById('studentWelcome').textContent = `Bem-vindo, ${data.name}!`;
+                    document.getElementById('studentName').textContent = data.name;
+                    document.getElementById('studentClass').textContent = data.turma;
+                    document.getElementById('studentAvatar').src = data.avatar;
+                    document.getElementById('studentCoins').textContent = data.moedas || 0;
+                    document.getElementById('studentStars').textContent = data.estrelas || 0;
+                    document.getElementById('studentProgress').textContent = `${data.progresso || 0} pts`;
+                    document.getElementById('studentCoinsInStore').textContent = data.moedas || 0;
+                    
+                    // Atualizar título
+                    const titulo = obterTitulo(data.progresso || 0);
+                    document.getElementById('studentTitle').textContent = titulo;
+                    
+                    // Atualizar barra de progresso
+                    const progressPercent = Math.min((data.progresso || 0) / 10, 100);
+                    document.getElementById('studentProgressBar').style.width = progressPercent + '%';
+                    
+                    // Carregar atividades
+                    await loadStudentActivity();
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dados do aluno:', error);
+            }
+        }
+
+        async function loadStudentActivity() {
+            try {
+                const activitiesRef = db.collection('activities')
+                    .where('studentId', '==', currentUser.uid)
+                    .orderBy('timestamp', 'desc')
+                    .limit(10);
+                
+                const snapshot = await activitiesRef.get();
+                const container = document.getElementById('studentActivity');
+                
+                if (snapshot.empty) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8">Nenhuma atividade ainda.</p>';
+                    return;
+                }
+
+                const activities = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                container.innerHTML = activities.map(activity => `
+                    <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                        <div class="text-2xl">${getActivityIcon(activity.type)}</div>
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-800">${activity.description}</p>
+                            <p class="text-sm text-gray-500">${formatDate(activity.timestamp)}</p>
+                        </div>
+                        ${activity.reward ? `<div class="text-right">
+                            <div class="text-sm font-semibold text-emerald-600">+${activity.reward.moedas || 0} 💰</div>
+                            <div class="text-sm font-semibold text-purple-600">+${activity.reward.estrelas || 0} ⭐</div>
+                        </div>` : ''}
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Erro ao carregar atividades:', error);
+            }
+        }
+
+        function getActivityIcon(type) {
+            const icons = {
+                'presence': '✅',
+                'purchase': '🛒',
+                'reward': '🎁',
+                'achievement': '🏆',
+                'mission': '🎯'
+            };
+            return icons[type] || '📝';
+        }
+
+        function formatDate(timestamp) {
+            if (!timestamp) return '';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleDateString('pt-BR') + ' às ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function showStudentSection(section) {
+            // Atualizar navegação
+            document.querySelectorAll('.student-nav-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-100', 'text-emerald-700');
+                btn.classList.add('text-gray-600');
+            });
+            
+            event.target.classList.remove('text-gray-600');
+            event.target.classList.add('bg-emerald-100', 'text-emerald-700');
+
+            // Mostrar seção
+            document.querySelectorAll('.student-section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`student${section.charAt(0).toUpperCase() + section.slice(1)}`).classList.remove('hidden');
+
+            // Carregar dados específicos da seção
+            if (section === 'loja') {
+                loadStudentStore();
+            } else if (section === 'ranking') {
+                loadStudentRanking();
+            }
+        }
+
+        async function loadStudentStore() {
+            try {
+                const productsSnapshot = await db.collection('products').get();
+                const container = document.getElementById('studentStoreItems');
+                
+                if (productsSnapshot.empty) {
+                    container.innerHTML = '<p class="text-gray-500 text-center py-8 col-span-full">Nenhum produto disponível.</p>';
+                    return;
+                }
+
+                const products = productsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }));
+
+                container.innerHTML = products.map(produto => `
+                    <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+                        <div class="aspect-w-16 aspect-h-9 bg-gradient-to-br from-slate-100 to-slate-200">
+                            ${produto.imagem ? 
+                                `<img src="${produto.imagem}" alt="${produto.nome}" class="w-full h-48 object-cover">` : 
+                                `<div class="w-full h-48 flex items-center justify-center text-4xl text-slate-400">🛍️</div>`
+                            }
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-bold text-gray-800 mb-2">${produto.nome}</h3>
+                            <p class="text-sm text-gray-600 mb-4 line-clamp-2">${produto.descricao}</p>
+                            <div class="flex items-center justify-between">
+                                <div class="text-lg font-bold text-amber-600">💰 ${produto.valor}</div>
+                                <button onclick="buyProduct('${produto.id}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                    Comprar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Erro ao carregar loja:', error);
+            }
+        }
+
+        async function buyProduct(productId) {
+            if (!currentUser) return;
+
+            try {
+                // Buscar dados do produto e do aluno
+                const [productDoc, studentDoc] = await Promise.all([
+                    db.collection('products').doc(productId).get(),
+                    db.collection('students').doc(currentUser.uid).get()
+                ]);
+
+                if (!productDoc.exists || !studentDoc.exists) {
+                    showNotification('Erro ao processar compra.', 'error');
+                    return;
+                }
+
+                const product = productDoc.data();
+                const student = studentDoc.data();
+
+                if ((student.moedas || 0) < product.valor) {
+                    showNotification('Moedas insuficientes!', 'warning');
+                    return;
+                }
+
+                // Processar compra
+                const batch = db.batch();
+                
+                // Atualizar moedas do aluno
+                const studentRef = db.collection('students').doc(currentUser.uid);
+                batch.update(studentRef, {
+                    moedas: (student.moedas || 0) - product.valor
+                });
+
+                // Registrar compra
+                const purchaseRef = db.collection('purchases').doc();
+                batch.set(purchaseRef, {
+                    studentId: currentUser.uid,
+                    studentName: student.name,
+                    productId: productId,
+                    productName: product.nome,
+                    valor: product.valor,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // Registrar atividade
+                const activityRef = db.collection('activities').doc();
+                batch.set(activityRef, {
+                    studentId: currentUser.uid,
+                    type: 'purchase',
+                    description: `Comprou "${product.nome}"`,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                await batch.commit();
+                
+                showNotification(`Você comprou "${product.nome}"!`, 'success');
+                loadStudentData(); // Atualizar dados do aluno
+                
+            } catch (error) {
+                console.error('Erro ao comprar produto:', error);
+                showNotification('Erro ao processar compra.', 'error');
+            }
+        }
+
+        async function loadStudentRanking() {
+            try {
+                // Ranking por moedas
+                const coinsSnapshot = await db.collection('students')
+                    .orderBy('moedas', 'desc')
+                    .limit(10)
+                    .get();
+
+                const coinsContainer = document.getElementById('rankingCoins');
+                const coinsRanking = coinsSnapshot.docs.map((doc, index) => {
+                    const data = doc.data();
+                    const isCurrentUser = doc.id === currentUser.uid;
+                    
+                    return `
+                        <div class="flex items-center justify-between p-3 ${isCurrentUser ? 'bg-emerald-100 border-2 border-emerald-300' : 'bg-gray-50'} rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-full ${getRankingColor(index)} flex items-center justify-center text-white font-bold text-sm">
+                                    ${index + 1}
+                                </div>
+                                <div>
+                                    <p class="font-medium ${isCurrentUser ? 'text-emerald-800' : 'text-gray-800'}">${isCurrentUser ? 'Você' : data.name}</p>
+                                    <p class="text-xs text-gray-500">${data.turma}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-amber-600">💰 ${data.moedas || 0}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                coinsContainer.innerHTML = coinsRanking;
+
+                // Ranking por progresso
+                const progressSnapshot = await db.collection('students')
+                    .orderBy('progresso', 'desc')
+                    .limit(10)
+                    .get();
+
+                const progressContainer = document.getElementById('rankingProgress');
+                const progressRanking = progressSnapshot.docs.map((doc, index) => {
+                    const data = doc.data();
+                    const isCurrentUser = doc.id === currentUser.uid;
+                    
+                    return `
+                        <div class="flex items-center justify-between p-3 ${isCurrentUser ? 'bg-emerald-100 border-2 border-emerald-300' : 'bg-gray-50'} rounded-lg">
+                            <div class="flex items-center space-x-3">
+                                <div class="w-8 h-8 rounded-full ${getRankingColor(index)} flex items-center justify-center text-white font-bold text-sm">
+                                    ${index + 1}
+                                </div>
+                                <div>
+                                    <p class="font-medium ${isCurrentUser ? 'text-emerald-800' : 'text-gray-800'}">${isCurrentUser ? 'Você' : data.name}</p>
+                                    <p class="text-xs text-gray-500">${data.turma}</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-blue-600">📈 ${data.progresso || 0} pts</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                progressContainer.innerHTML = progressRanking;
+                
+            } catch (error) {
+                console.error('Erro ao carregar ranking:', error);
+            }
+        }
+
+        function getRankingColor(position) {
+            if (position === 0) return 'bg-yellow-500'; // Ouro
+            if (position === 1) return 'bg-gray-400';   // Prata
+            if (position === 2) return 'bg-orange-600'; // Bronze
+            return 'bg-blue-500'; // Outros
+        }
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Event listeners para login
+            document.getElementById('loginProfessorBtn').addEventListener('click', loginProfessor);
+            document.getElementById('loginAlunoBtn').addEventListener('click', loginAluno);
+
+            // Monitor auth state
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // Usuário logado - determinar tipo baseado no email
+                    if (user.email.endsWith('@barueri.br')) {
+                        currentUser = user;
+                        currentUserType = 'professor';
+                        showProfessorDashboard();
+                    } else if (user.email.endsWith('@aluno.barueri.br')) {
+                        currentUser = user;
+                        currentUserType = 'student';
+                        initializeStudentData().then(() => {
+                            showStudentDashboard();
+                        });
+                    } else {
+                        // Email não autorizado
+                        auth.signOut();
+                        showLoginScreen();
+                    }
+                } else {
+                    // Usuário não logado
+                    showLoginScreen();
+                }
+            });
+
+            // Setup responsive sidebar
+            setupResponsiveSidebar();
+        });
+
+        // Sistema de notificações
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notificationContainer');
+            const notification = document.createElement('div');
+            
+            const colors = {
+                success: 'bg-emerald-500 border-emerald-600',
+                error: 'bg-red-500 border-red-600',
+                warning: 'bg-amber-500 border-amber-600',
+                info: 'bg-slate-500 border-slate-600'
+            };
+            
+            const icons = {
+                success: 'fas fa-check-circle',
+                error: 'fas fa-exclamation-circle',
+                warning: 'fas fa-exclamation-triangle',
+                info: 'fas fa-info-circle'
+            };
+            
+            notification.className = `notification ${colors[type]} text-white p-4 rounded-lg shadow-lg border-l-4`;
+            notification.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <i class="${icons[type]}"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-auto text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+            
+            container.appendChild(notification);
+            
+            // Mostrar notificação
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Remover automaticamente após 5 segundos
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        const turmas = ["M21", "M22", "T21", "T22", "M31", "M32", "T31", "T32", "M41", "M42", "T41", "T42", "M51", "M52", "T51", "T52", "M61", "M62", "T61", "T62"];
+        
+        // Configurações do RoboHash
+        const roboHashSets = ['set1', 'set2', 'set3', 'set4']; // Diferentes estilos de robôs
+        const roboHashBgs = ['bg1', 'bg2', 'transparent']; // Diferentes fundos
+        
+        const titulos = [
+            { min: 0, max: 100, titulo: "🔰 Novato" },
+            { min: 101, max: 300, titulo: "⚡ Entusiasta" },
+            { min: 301, max: 600, titulo: "💻 Codificador" },
+            { min: 601, max: 1000, titulo: "🤖 Cyborg" },
+            { min: 1001, max: 1500, titulo: "🚀 Inovador" },
+            { min: 1501, max: 2500, titulo: "🏆 Mestre Maker" },
+            { min: 2501, max: Infinity, titulo: "👑 Lenda Digital" }
+        ];
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeData();
+            populateSelects();
+            showSection('alunos');
+            buscarFrase();
+            
+            // Event listeners para sidebar responsiva
+            setupResponsiveSidebar();
+        });
+
+        function initializeData() {
+            if (!localStorage.getItem('alunos')) {
+                localStorage.setItem('alunos', JSON.stringify([]));
+            }
+            if (!localStorage.getItem('missoes')) {
+                localStorage.setItem('missoes', JSON.stringify([]));
+            }
+            if (!localStorage.getItem('produtos')) {
+                localStorage.setItem('produtos', JSON.stringify([]));
+            }
+            if (!localStorage.getItem('chamadas')) {
+                localStorage.setItem('chamadas', JSON.stringify([]));
+            }
+            if (!localStorage.getItem('compras')) {
+                localStorage.setItem('compras', JSON.stringify([]));
+            }
+        }
+
+        function populateSelects() {
+            const selects = ['filtroTurma', 'turmaAluno', 'turmaChamada', 'turmaSorteio', 'turmaRecompensa', 'turmaCadastroMassa'];
+            selects.forEach(selectId => {
+                const select = document.getElementById(selectId);
+                if (select) {
+                    // Limpar opções existentes (exceto a primeira)
+                    while (select.children.length > 1) {
+                        select.removeChild(select.lastChild);
+                    }
+                    turmas.forEach(turma => {
+                        const option = document.createElement('option');
+                        option.value = turma;
+                        option.textContent = turma;
+                        select.appendChild(option);
+                    });
+                }
+            });
+        }
+
+        function obterAvatarAleatorio(nome = null) {
+            // Se um nome for fornecido, usar como seed para consistência
+            const seed = nome || Math.random().toString(36).substring(7);
+            const set = roboHashSets[Math.floor(Math.random() * roboHashSets.length)];
+            const bg = roboHashBgs[Math.floor(Math.random() * roboHashBgs.length)];
+            
+            return `https://robohash.org/${encodeURIComponent(seed)}.png?set=${set}&bgset=${bg}&size=80x80`;
+        }
+
+        function gerarAvatarPorNome(nome) {
+            // Gera um avatar consistente baseado no nome do aluno
+            const set = roboHashSets[nome.length % roboHashSets.length];
+            const bg = roboHashBgs[nome.charCodeAt(0) % roboHashBgs.length];
+            
+            return `https://robohash.org/${encodeURIComponent(nome)}.png?set=${set}&bgset=${bg}&size=80x80`;
+        }
+
+        function ehAniversariante(aniversario) {
+            if (!aniversario) return false;
+            const hoje = new Date();
+            // Usar UTC para evitar problemas de fuso horário
+            const dataAniversario = new Date(aniversario + 'T00:00:00');
+            return hoje.getMonth() === dataAniversario.getMonth();
+        }
+
+        function setupResponsiveSidebar() {
+            // Mobile elements
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const mobileSidebar = document.getElementById('mobileSidebar');
+            const mobileOverlay = document.getElementById('mobileOverlay');
+            
+            // Desktop elements
+            const desktopSidebarTrigger = document.getElementById('desktopSidebarTrigger');
+            const desktopSidebar = document.getElementById('desktopSidebar');
+            const mainContent = document.getElementById('mainContent');
+            
+            let sidebarTimeout;
+            let isMobile = window.innerWidth < 1024;
+            let isMobileSidebarOpen = false;
+            
+            // Mobile menu functionality
+            if (mobileMenuBtn) {
+                mobileMenuBtn.addEventListener('click', function() {
+                    toggleMobileSidebar();
+                });
+            }
+            
+            // Mobile overlay click to close
+            if (mobileOverlay) {
+                mobileOverlay.addEventListener('click', function() {
+                    hideMobileSidebar();
+                });
+            }
+            
+            // Desktop auto-hide functionality
+            if (desktopSidebarTrigger) {
+                desktopSidebarTrigger.addEventListener('mouseenter', function() {
+                    if (!isMobile) {
+                        clearTimeout(sidebarTimeout);
+                        showDesktopSidebar();
+                    }
+                });
+                
+                desktopSidebarTrigger.addEventListener('mouseleave', function() {
+                    if (!isMobile) {
+                        sidebarTimeout = setTimeout(hideDesktopSidebar, 300);
+                    }
+                });
+            }
+            
+            if (desktopSidebar) {
+                desktopSidebar.addEventListener('mouseenter', function() {
+                    if (!isMobile) {
+                        clearTimeout(sidebarTimeout);
+                    }
+                });
+                
+                desktopSidebar.addEventListener('mouseleave', function() {
+                    if (!isMobile) {
+                        sidebarTimeout = setTimeout(hideDesktopSidebar, 300);
+                    }
+                });
+            }
+            
+            // Mobile sidebar functions
+            function toggleMobileSidebar() {
+                if (isMobileSidebarOpen) {
+                    hideMobileSidebar();
+                } else {
+                    showMobileSidebar();
+                }
+            }
+            
+            function showMobileSidebar() {
+                if (mobileSidebar && mobileOverlay && mobileMenuBtn) {
+                    mobileSidebar.classList.add('open');
+                    mobileOverlay.classList.add('show');
+                    mobileMenuBtn.classList.add('active');
+                    isMobileSidebarOpen = true;
+                    document.body.style.overflow = 'hidden'; // Prevent scrolling
+                }
+            }
+            
+            function hideMobileSidebar() {
+                if (mobileSidebar && mobileOverlay && mobileMenuBtn) {
+                    mobileSidebar.classList.remove('open');
+                    mobileOverlay.classList.remove('show');
+                    mobileMenuBtn.classList.remove('active');
+                    isMobileSidebarOpen = false;
+                    document.body.style.overflow = ''; // Restore scrolling
+                }
+            }
+            
+            // Desktop sidebar functions
+            function showDesktopSidebar() {
+                if (desktopSidebar && mainContent) {
+                    desktopSidebar.classList.add('show');
+                    mainContent.style.marginLeft = '16rem';
+                }
+            }
+            
+            function hideDesktopSidebar() {
+                if (desktopSidebar && mainContent) {
+                    desktopSidebar.classList.remove('show');
+                    mainContent.style.marginLeft = '0';
+                }
+            }
+            
+            // Handle window resize
+            window.addEventListener('resize', function() {
+                const wasMobile = isMobile;
+                isMobile = window.innerWidth < 1024;
+                
+                if (wasMobile !== isMobile) {
+                    // Reset all states when switching between mobile/desktop
+                    hideMobileSidebar();
+                    hideDesktopSidebar();
+                    clearTimeout(sidebarTimeout);
+                }
+            });
+            
+            // Close mobile sidebar when clicking nav items
+            const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+            mobileNavItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    // Small delay to allow the section change to happen first
+                    setTimeout(() => {
+                        hideMobileSidebar();
+                        updateActiveNavItem(this);
+                    }, 100);
+                });
+            });
+            
+            // Update active nav item
+            function updateActiveNavItem(clickedItem) {
+                // Remove active class from all mobile nav items
+                mobileNavItems.forEach(item => {
+                    item.classList.remove('active');
+                });
+                
+                // Add active class to clicked item
+                if (clickedItem && clickedItem.classList.contains('mobile-nav-item')) {
+                    clickedItem.classList.add('active');
+                }
+            }
+        }
+
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(section).classList.remove('hidden');
+            currentSection = section;
+
+            switch(section) {
+                case 'alunos':
+                    renderAlunos();
+                    break;
+                case 'chamada':
+                    renderChamada();
+                    break;
+                case 'missoes':
+                    renderMissoes();
+                    break;
+                case 'relatorios':
+                    renderRelatorios();
+                    break;
+                case 'loja':
+                    renderLoja();
+                    break;
+                case 'cadastroMassa':
+                    break;
+                case 'ferramentas':
+                    break;
+            }
+        }
+
+        // Funções de Cadastro em Massa
+        function cadastrarAlunosEmMassa() {
+            const turma = document.getElementById('turmaCadastroMassa').value;
+            const nomesTexto = document.getElementById('nomesAlunos').value.trim();
+
+            if (!turma) {
+                showNotification('Selecione uma turma primeiro!', 'warning');
+                return;
+            }
+
+            if (!nomesTexto) {
+                showNotification('Digite pelo menos um nome de aluno!', 'warning');
+                return;
+            }
+
+            const nomes = nomesTexto.split('\n').filter(nome => nome.trim() !== '');
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            let alunosCadastrados = 0;
+            let alunosJaExistentes = [];
+
+            nomes.forEach(nome => {
+                const nomeFormatado = nome.trim();
+                if (nomeFormatado) {
+                    // Verificar se já existe
+                    const jaExiste = alunos.some(aluno => 
+                        aluno.nome.toLowerCase() === nomeFormatado.toLowerCase() && aluno.turma === turma
+                    );
+
+                    if (!jaExiste) {
+                        const novoAluno = {
+                            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                            nome: nomeFormatado,
+                            turma,
+                            aniversario: '',
+                            moedas: 0,
+                            estrelas: 0,
+                            progresso: 0,
+                            presente: false,
+                            avatar: gerarAvatarPorNome(nomeFormatado)
+                        };
+                        alunos.push(novoAluno);
+                        alunosCadastrados++;
+                    } else {
+                        alunosJaExistentes.push(nomeFormatado);
+                    }
+                }
+            });
+
+            localStorage.setItem('alunos', JSON.stringify(alunos));
+
+            // Mostrar resultado
+            const resultadoDiv = document.getElementById('resultadoCadastro');
+            const detalhesDiv = document.getElementById('detalhesResultado');
+            
+            let mensagem = `<p class="text-green-600">✅ ${alunosCadastrados} alunos cadastrados com sucesso na turma ${turma}!</p>`;
+            
+            if (alunosJaExistentes.length > 0) {
+                mensagem += `<p class="text-yellow-600 mt-2">⚠️ ${alunosJaExistentes.length} alunos já existiam: ${alunosJaExistentes.join(', ')}</p>`;
+            }
+
+            detalhesDiv.innerHTML = mensagem;
+            resultadoDiv.classList.remove('hidden');
+
+            // Limpar campo de texto
+            document.getElementById('nomesAlunos').value = '';
+
+            // Atualizar lista se estivermos na seção de alunos
+            if (currentSection === 'alunos') {
+                renderAlunos();
+            }
+            
+            // Atualizar selects
+            populateSelects();
+        }
+
+        function exportarTurmaCSV() {
+            const turma = document.getElementById('turmaCadastroMassa').value;
+            
+            if (!turma) {
+                alert('Selecione uma turma primeiro!');
+                return;
+            }
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const alunosTurma = alunos.filter(aluno => aluno.turma === turma);
+
+            if (alunosTurma.length === 0) {
+                alert('Nenhum aluno encontrado nesta turma!');
+                return;
+            }
+
+            // Criar CSV
+            const csvHeader = 'Nome,Turma,Moedas,Estrelas,Progresso,Frequencia,Titulo,Aniversario\n';
+            const csvContent = alunosTurma.map(aluno => {
+                const frequencia = calcularFrequencia(aluno.id);
+                const titulo = obterTitulo(aluno.progresso || 0);
+                const aniversario = aluno.aniversario || '';
+                
+                return `"${aluno.nome}","${aluno.turma}",${aluno.moedas || 0},${aluno.estrelas || 0},${aluno.progresso || 0},${frequencia}%,"${titulo}","${aniversario}"`;
+            }).join('\n');
+
+            const csvData = csvHeader + csvContent;
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            
+            const hoje = new Date();
+            const dia = hoje.getDate().toString().padStart(2, '0');
+            const mes = (hoje.getMonth() + 1).toString().padStart(2, '0');
+            
+            link.href = url;
+            link.download = `${turma}-${dia}-${mes}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function openModal(modalId) {
+            document.getElementById(modalId).classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+            // Limpar campos
+            const modal = document.getElementById(modalId);
+            modal.querySelectorAll('input, textarea, select').forEach(field => {
+                if (field.type !== 'button') field.value = '';
+            });
+        }
+
+        // Funções de Alunos
+        function renderAlunos() {
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const container = document.getElementById('listaAlunos');
+            
+            container.innerHTML = alunos.map(aluno => {
+                const isAniversariante = ehAniversariante(aluno.aniversario);
+                const frequencia = calcularFrequencia(aluno.id);
+                const titulo = obterTitulo(aluno.progresso || 0);
+                const dataAniversario = aluno.aniversario ? new Date(aluno.aniversario + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+                
+                // Determinar cor do card baseado na frequência
+                let cardBorderClass = 'border-slate-200';
+                let cardBgClass = 'bg-white';
+                
+                if (isAniversariante) {
+                    cardBorderClass = 'border-yellow-400';
+                    cardBgClass = 'bg-gradient-to-br from-yellow-50 to-amber-50';
+                } else if (frequencia >= 90) {
+                    cardBorderClass = 'border-emerald-400';
+                } else if (frequencia >= 75) {
+                    cardBorderClass = 'border-blue-400';
+                } else if (frequencia < 60) {
+                    cardBorderClass = 'border-red-400';
+                }
+                
+                return `
+                <div class="student-card ${cardBgClass} rounded-xl shadow-lg border-2 ${cardBorderClass} p-6 relative overflow-hidden group hover:shadow-xl transition-all duration-300 ${isAniversariante ? 'ring-2 ring-yellow-300 ring-opacity-50' : ''}">
+                    ${isAniversariante ? '<div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-yellow-400 to-amber-500 rounded-bl-full flex items-start justify-end p-2"><span class="text-white text-xs">🎂</span></div>' : ''}
+                    
+                    <!-- Header com Avatar e Info Principal -->
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <div class="w-20 h-20 rounded-2xl overflow-hidden border-3 ${isAniversariante ? 'border-yellow-400' : 'border-slate-200'} shadow-lg flex-shrink-0 bg-gradient-to-br from-slate-100 to-slate-200">
+                                    <img src="${aluno.avatar || gerarAvatarPorNome(aluno.nome)}" 
+                                         alt="Avatar de ${aluno.nome}" 
+                                         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCA0MEMzNS41ODE3IDQwIDMyIDM2LjQxODMgMzIgMzJDMzIgMjcuNTgxNyAzNS41ODE3IDI0IDQwIDI0QzQ0LjQxODMgMjQgNDggMjcuNTgxNyA0OCAzMkM0OCAzNi40MTgzIDQ0LjQxODMgNDAgNDAgNDBaTTQwIDQ0QzMwLjA1ODkgNDQgMjIgNTEuMTYzNCAyMiA2MEgyMkMyMiA2MC41NTIzIDIyLjQ0NzcgNjEgMjMgNjFINTdDNTcuNTUyMyA2MSA1OCA2MC41NTIzIDU4IDYwQzU4IDUxLjE2MzQgNDkuOTQxMSA0NCA0MCA0NFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+'; this.alt='Avatar padrão';">
+                                </div>
+                                <!-- Indicador de Status -->
+                                <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full ${aluno.presente ? 'bg-emerald-500' : 'bg-slate-400'} border-2 border-white shadow-sm flex items-center justify-center">
+                                    <i class="fas ${aluno.presente ? 'fa-check' : 'fa-times'} text-white text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-slate-800 mb-1 leading-tight">${aluno.nome}</h3>
+                                <div class="flex items-center space-x-3 text-sm">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                                        ${aluno.turma}
+                                    </span>
+                                    ${dataAniversario ? `<span class="text-slate-500">📅 ${dataAniversario}</span>` : ''}
+                                </div>
+                                <div class="mt-2">
+                                    <span class="inline-flex items-center text-xs font-medium ${getTituloColor(titulo)} px-2 py-1 rounded-md">
+                                        ${titulo}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botões de Ação -->
+                        <div class="flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button onclick="regenerarAvatar('${aluno.id}')" class="p-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors" title="Regenerar Avatar">
+                                <i class="fas fa-sync-alt text-sm"></i>
+                            </button>
+                            <button onclick="editarAluno('${aluno.id}')" class="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Aluno">
+                                <i class="fas fa-edit text-sm"></i>
+                            </button>
+                            <button onclick="deletarAluno('${aluno.id}')" class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" title="Deletar Aluno">
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Inline -->
+                    <div class="flex items-center justify-between mb-4 bg-slate-50 rounded-lg p-3">
+                        <!-- Moedas -->
+                        <div class="flex items-center space-x-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg">💰</span>
+                                <span class="text-lg font-bold text-amber-600">${aluno.moedas || 0}</span>
+                            </div>
+                            <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button onclick="ajustarValor('${aluno.id}', 'moedas', -1)" class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold transition-colors shadow-sm flex items-center justify-center">-</button>
+                                <button onclick="ajustarValor('${aluno.id}', 'moedas', 1)" class="w-6 h-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full text-xs font-bold transition-colors shadow-sm flex items-center justify-center">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Estrelas -->
+                        <div class="flex items-center space-x-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg">⭐</span>
+                                <span class="text-lg font-bold text-purple-600">${aluno.estrelas || 0}</span>
+                            </div>
+                            <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button onclick="ajustarValor('${aluno.id}', 'estrelas', -1)" class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold transition-colors shadow-sm flex items-center justify-center">-</button>
+                                <button onclick="ajustarValor('${aluno.id}', 'estrelas', 1)" class="w-6 h-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full text-xs font-bold transition-colors shadow-sm flex items-center justify-center">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Frequência -->
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-slate-600">Frequência</span>
+                            <span class="text-sm font-bold ${getFrequenciaColor(frequencia)}">${frequencia}%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500 ${getFrequenciaBarColor(frequencia)}" style="width: ${frequencia}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Progresso -->
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-600">Progresso</span>
+                        <span class="font-bold text-slate-800">${aluno.progresso || 0} pts</span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function salvarAluno() {
+            const nome = document.getElementById('nomeAluno').value;
+            const turma = document.getElementById('turmaAluno').value;
+            const aniversario = document.getElementById('aniversarioAluno').value;
+
+            if (!nome || !turma) {
+                showNotification('Por favor, preencha todos os campos obrigatórios.', 'warning');
+                return;
+            }
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const novoAluno = {
+                id: Date.now().toString(),
+                nome,
+                turma,
+                aniversario,
+                moedas: 0,
+                estrelas: 0,
+                progresso: 0,
+                presente: false,
+                avatar: gerarAvatarPorNome(nome)
+            };
+
+            alunos.push(novoAluno);
+            localStorage.setItem('alunos', JSON.stringify(alunos));
+            closeModal('modalCadastroAluno');
+            renderAlunos();
+            showNotification(`Aluno ${nome} cadastrado com sucesso!`, 'success');
+        }
+
+        function editarAluno(id) {
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const aluno = alunos.find(a => a.id === id);
+            
+            if (aluno) {
+                currentEditingStudent = id;
+                document.getElementById('editNomeAluno').value = aluno.nome;
+                document.getElementById('editAniversarioAluno').value = aluno.aniversario || '';
+                document.getElementById('editProgressoAluno').value = aluno.progresso || 0;
+                openModal('modalEditarAluno');
+            }
+        }
+
+        function salvarEdicaoAluno() {
+            if (!currentEditingStudent) return;
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const index = alunos.findIndex(a => a.id === currentEditingStudent);
+            
+            if (index !== -1) {
+                alunos[index].nome = document.getElementById('editNomeAluno').value;
+                alunos[index].aniversario = document.getElementById('editAniversarioAluno').value;
+                alunos[index].progresso = parseInt(document.getElementById('editProgressoAluno').value) || 0;
+                
+                localStorage.setItem('alunos', JSON.stringify(alunos));
+                closeModal('modalEditarAluno');
+                renderAlunos();
+            }
+        }
+
+        function regenerarAvatar(id) {
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const index = alunos.findIndex(a => a.id === id);
+            
+            if (index !== -1) {
+                // Gera um novo avatar com um seed aleatório baseado no nome + timestamp
+                const novoSeed = alunos[index].nome + Date.now();
+                alunos[index].avatar = obterAvatarAleatorio(novoSeed);
+                localStorage.setItem('alunos', JSON.stringify(alunos));
+                renderAlunos();
+                showNotification(`Avatar de ${alunos[index].nome} regenerado!`, 'success');
+            }
+        }
+
+        function deletarAluno(id) {
+            if (confirm('Deseja realmente deletar este aluno? Esta ação não pode ser desfeita.')) {
+                const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+                const aluno = alunos.find(a => a.id === id);
+                const novosAlunos = alunos.filter(a => a.id !== id);
+                localStorage.setItem('alunos', JSON.stringify(novosAlunos));
+                renderAlunos();
+                showNotification(`Aluno ${aluno?.nome || ''} removido com sucesso!`, 'info');
+            }
+        }
+
+        function ajustarValor(id, tipo, valor) {
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const index = alunos.findIndex(a => a.id === id);
+            
+            if (index !== -1) {
+                alunos[index][tipo] = Math.max(0, (alunos[index][tipo] || 0) + valor);
+                localStorage.setItem('alunos', JSON.stringify(alunos));
+                renderAlunos();
+            }
+        }
+
+        function filtrarAlunos() {
+            const turmaFiltro = document.getElementById('filtroTurma').value;
+            const pesquisa = document.getElementById('pesquisarAluno').value.toLowerCase();
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            
+            const alunosFiltrados = alunos.filter(aluno => {
+                const matchTurma = !turmaFiltro || aluno.turma === turmaFiltro;
+                const matchNome = !pesquisa || aluno.nome.toLowerCase().includes(pesquisa);
+                return matchTurma && matchNome;
+            });
+
+            const container = document.getElementById('listaAlunos');
+            container.innerHTML = alunosFiltrados.map(aluno => {
+                const isAniversariante = ehAniversariante(aluno.aniversario);
+                const frequencia = calcularFrequencia(aluno.id);
+                const titulo = obterTitulo(aluno.progresso || 0);
+                const dataAniversario = aluno.aniversario ? new Date(aluno.aniversario + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+                
+                // Determinar cor do card baseado na frequência
+                let cardBorderClass = 'border-slate-200';
+                let cardBgClass = 'bg-white';
+                
+                if (isAniversariante) {
+                    cardBorderClass = 'border-yellow-400';
+                    cardBgClass = 'bg-gradient-to-br from-yellow-50 to-amber-50';
+                } else if (frequencia >= 90) {
+                    cardBorderClass = 'border-emerald-400';
+                } else if (frequencia >= 75) {
+                    cardBorderClass = 'border-blue-400';
+                } else if (frequencia < 60) {
+                    cardBorderClass = 'border-red-400';
+                }
+                
+                return `
+                <div class="student-card ${cardBgClass} rounded-xl shadow-lg border-2 ${cardBorderClass} p-6 relative overflow-hidden group hover:shadow-xl transition-all duration-300 ${isAniversariante ? 'ring-2 ring-yellow-300 ring-opacity-50' : ''}">
+                    ${isAniversariante ? '<div class="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-yellow-400 to-amber-500 rounded-bl-full flex items-start justify-end p-2"><span class="text-white text-xs">🎂</span></div>' : ''}
+                    
+                    <!-- Header com Avatar e Info Principal -->
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="flex items-center space-x-4">
+                            <div class="relative">
+                                <div class="w-20 h-20 rounded-2xl overflow-hidden border-3 ${isAniversariante ? 'border-yellow-400' : 'border-slate-200'} shadow-lg flex-shrink-0 bg-gradient-to-br from-slate-100 to-slate-200">
+                                    <img src="${aluno.avatar || gerarAvatarPorNome(aluno.nome)}" 
+                                         alt="Avatar de ${aluno.nome}" 
+                                         class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                                         onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAiIGhlaWdodD0iODAiIHZpZXdCb3g9IjAgMCA4MCA4MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjgwIiBoZWlnaHQ9IjgwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik00MCA0MEMzNS41ODE3IDQwIDMyIDM2LjQxODMgMzIgMzJDMzIgMjcuNTgxNyAzNS41ODE3IDI0IDQwIDI0QzQ0LjQxODMgMjQgNDggMjcuNTgxNyA0OCAzMkM0OCAzNi40MTgzIDQ0LjQxODMgNDAgNDAgNDBaTTQwIDQ0QzMwLjA1ODkgNDQgMjIgNTEuMTYzNCAyMiA2MEgyMkMyMiA2MC41NTIzIDIyLjQ0NzcgNjEgMjMgNjFINTdDNTcuNTUyMyA2MSA1OCA2MC41NTIzIDU4IDYwQzU4IDUxLjE2MzQgNDkuOTQxMSA0NCA0MCA0NFoiIGZpbGw9IiM5Q0EzQUYiLz4KPC9zdmc+'; this.alt='Avatar padrão';">
+                                </div>
+                                <!-- Indicador de Status -->
+                                <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full ${aluno.presente ? 'bg-emerald-500' : 'bg-slate-400'} border-2 border-white shadow-sm flex items-center justify-center">
+                                    <i class="fas ${aluno.presente ? 'fa-check' : 'fa-times'} text-white text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <h3 class="text-xl font-bold text-slate-800 mb-1 leading-tight">${aluno.nome}</h3>
+                                <div class="flex items-center space-x-3 text-sm">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
+                                        ${aluno.turma}
+                                    </span>
+                                    ${dataAniversario ? `<span class="text-slate-500">📅 ${dataAniversario}</span>` : ''}
+                                </div>
+                                <div class="mt-2">
+                                    <span class="inline-flex items-center text-xs font-medium ${getTituloColor(titulo)} px-2 py-1 rounded-md">
+                                        ${titulo}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Botões de Ação -->
+                        <div class="flex flex-col space-y-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <button onclick="regenerarAvatar('${aluno.id}')" class="p-2 text-purple-500 hover:text-purple-700 hover:bg-purple-50 rounded-lg transition-colors" title="Regenerar Avatar">
+                                <i class="fas fa-sync-alt text-sm"></i>
+                            </button>
+                            <button onclick="editarAluno('${aluno.id}')" class="p-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors" title="Editar Aluno">
+                                <i class="fas fa-edit text-sm"></i>
+                            </button>
+                            <button onclick="deletarAluno('${aluno.id}')" class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors" title="Deletar Aluno">
+                                <i class="fas fa-trash text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Stats Inline -->
+                    <div class="flex items-center justify-between mb-4 bg-slate-50 rounded-lg p-3">
+                        <!-- Moedas -->
+                        <div class="flex items-center space-x-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg">💰</span>
+                                <span class="text-lg font-bold text-amber-600">${aluno.moedas || 0}</span>
+                            </div>
+                            <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button onclick="ajustarValor('${aluno.id}', 'moedas', -1)" class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold transition-colors shadow-sm flex items-center justify-center">-</button>
+                                <button onclick="ajustarValor('${aluno.id}', 'moedas', 1)" class="w-6 h-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full text-xs font-bold transition-colors shadow-sm flex items-center justify-center">+</button>
+                            </div>
+                        </div>
+
+                        <!-- Estrelas -->
+                        <div class="flex items-center space-x-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-lg">⭐</span>
+                                <span class="text-lg font-bold text-purple-600">${aluno.estrelas || 0}</span>
+                            </div>
+                            <div class="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                <button onclick="ajustarValor('${aluno.id}', 'estrelas', -1)" class="w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold transition-colors shadow-sm flex items-center justify-center">-</button>
+                                <button onclick="ajustarValor('${aluno.id}', 'estrelas', 1)" class="w-6 h-6 bg-emerald-500 hover:bg-emerald-600 text-white rounded-full text-xs font-bold transition-colors shadow-sm flex items-center justify-center">+</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barra de Frequência -->
+                    <div class="mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-sm font-medium text-slate-600">Frequência</span>
+                            <span class="text-sm font-bold ${getFrequenciaColor(frequencia)}">${frequencia}%</span>
+                        </div>
+                        <div class="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+                            <div class="h-full rounded-full transition-all duration-500 ${getFrequenciaBarColor(frequencia)}" style="width: ${frequencia}%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Progresso -->
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-slate-600">Progresso</span>
+                        <span class="font-bold text-slate-800">${aluno.progresso || 0} pts</span>
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        function obterTitulo(progresso) {
+            const titulo = titulos.find(t => progresso >= t.min && progresso <= t.max);
+            return titulo ? titulo.titulo : "🔰 Novato";
+        }
+
+        function getTituloColor(titulo) {
+            if (titulo.includes('Novato')) return 'bg-slate-100 text-slate-700';
+            if (titulo.includes('Entusiasta')) return 'bg-blue-100 text-blue-700';
+            if (titulo.includes('Codificador')) return 'bg-indigo-100 text-indigo-700';
+            if (titulo.includes('Cyborg')) return 'bg-purple-100 text-purple-700';
+            if (titulo.includes('Inovador')) return 'bg-pink-100 text-pink-700';
+            if (titulo.includes('Mestre')) return 'bg-orange-100 text-orange-700';
+            if (titulo.includes('Lenda')) return 'bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800';
+            return 'bg-slate-100 text-slate-700';
+        }
+
+        function getFrequenciaColor(frequencia) {
+            if (frequencia >= 90) return 'text-emerald-600';
+            if (frequencia >= 75) return 'text-blue-600';
+            if (frequencia >= 60) return 'text-amber-600';
+            return 'text-red-600';
+        }
+
+        function getFrequenciaBarColor(frequencia) {
+            if (frequencia >= 90) return 'bg-gradient-to-r from-emerald-400 to-emerald-500';
+            if (frequencia >= 75) return 'bg-gradient-to-r from-blue-400 to-blue-500';
+            if (frequencia >= 60) return 'bg-gradient-to-r from-amber-400 to-amber-500';
+            return 'bg-gradient-to-r from-red-400 to-red-500';
+        }
+
+        function calcularFrequencia(alunoId) {
+            const chamadas = JSON.parse(localStorage.getItem('chamadas') || '[]');
+            const presencas = chamadas.filter(c => c.presentes && c.presentes.includes(alunoId));
+            return chamadas.length > 0 ? Math.round((presencas.length / chamadas.length) * 100) : 0;
+        }
+
+        // Funções de Chamada
+        function renderChamada() {
+            const container = document.getElementById('chamadaContent');
+            container.innerHTML = `
+                <div class="bg-gray-50 p-4 rounded-lg mb-6">
+                    <p class="text-gray-600">Selecione uma turma para fazer a chamada.</p>
+                </div>
+            `;
+            renderHistoricoChamadas();
+        }
+
+        function novaChamada() {
+            const turma = document.getElementById('turmaChamada').value;
+            if (!turma) {
+                alert('Selecione uma turma primeiro!');
+                return;
+            }
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const alunosTurma = alunos.filter(a => a.turma === turma);
+
+            if (alunosTurma.length === 0) {
+                alert('Nenhum aluno encontrado nesta turma!');
+                return;
+            }
+
+            const container = document.getElementById('chamadaContent');
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-lg border">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">Chamada - Turma ${turma}</h3>
+                        <div class="space-x-2">
+                            <button onclick="marcarTodos(true)" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">Marcar Todos</button>
+                            <button onclick="marcarTodos(false)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">Desmarcar Todos</button>
+                            <button onclick="salvarChamada()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Salvar Chamada</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${alunosTurma.map(aluno => `
+                            <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" class="chamada-checkbox" data-aluno="${aluno.id}" checked>
+                                <span class="font-medium">${aluno.nome}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function marcarTodos(presente) {
+            document.querySelectorAll('.chamada-checkbox').forEach(checkbox => {
+                checkbox.checked = presente;
+            });
+        }
+
+        function salvarChamada() {
+            const turma = document.getElementById('turmaChamada').value;
+            const presentes = Array.from(document.querySelectorAll('.chamada-checkbox:checked'))
+                .map(cb => cb.dataset.aluno);
+            
+            const chamadas = JSON.parse(localStorage.getItem('chamadas') || '[]');
+            const novaChamada = {
+                id: Date.now().toString(),
+                turma,
+                data: new Date().toLocaleDateString('pt-BR'),
+                presentes,
+                total: document.querySelectorAll('.chamada-checkbox').length
+            };
+
+            chamadas.push(novaChamada);
+            localStorage.setItem('chamadas', JSON.stringify(chamadas));
+            
+            // Atualizar status de presença dos alunos
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            alunos.forEach(aluno => {
+                aluno.presente = presentes.includes(aluno.id);
+            });
+            localStorage.setItem('alunos', JSON.stringify(alunos));
+
+            alert('Chamada salva com sucesso!');
+            renderChamada();
+        }
+
+        function renderHistoricoChamadas() {
+            const chamadas = JSON.parse(localStorage.getItem('chamadas') || '[]');
+            const container = document.getElementById('historicoChamadas');
+            
+            container.innerHTML = `
+                <h3 class="text-lg font-semibold mb-4">📅 Histórico de Chamadas</h3>
+                <div class="space-y-4">
+                    ${chamadas.map(chamada => `
+                        <div class="bg-white p-4 rounded-lg border flex justify-between items-center">
+                            <div>
+                                <div class="font-semibold">Turma ${chamada.turma} - ${chamada.data}</div>
+                                <div class="text-sm text-gray-600">
+                                    Presentes: ${chamada.presentes.length}/${chamada.total} 
+                                    (${Math.round((chamada.presentes.length / chamada.total) * 100)}%)
+                                </div>
+                            </div>
+                            <div class="flex space-x-2">
+                                <button onclick="editarChamada('${chamada.id}')" class="text-blue-500 hover:text-blue-700" title="Editar chamada">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="deletarChamada('${chamada.id}')" class="text-red-500 hover:text-red-700" title="Deletar chamada">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function editarChamada(id) {
+            const chamadas = JSON.parse(localStorage.getItem('chamadas') || '[]');
+            const chamada = chamadas.find(c => c.id === id);
+            
+            if (!chamada) return;
+            
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const alunosTurma = alunos.filter(a => a.turma === chamada.turma);
+            
+            const container = document.getElementById('chamadaContent');
+            container.innerHTML = `
+                <div class="bg-white p-6 rounded-lg border">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold">✏️ Editar Chamada - Turma ${chamada.turma} (${chamada.data})</h3>
+                        <div class="space-x-2">
+                            <button onclick="marcarTodos(true)" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">Marcar Todos</button>
+                            <button onclick="marcarTodos(false)" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">Desmarcar Todos</button>
+                            <button onclick="salvarEdicaoChamada('${id}')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">Salvar Alterações</button>
+                            <button onclick="renderChamada()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">Cancelar</button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${alunosTurma.map(aluno => `
+                            <label class="flex items-center space-x-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                <input type="checkbox" class="chamada-checkbox" data-aluno="${aluno.id}" ${chamada.presentes.includes(aluno.id) ? 'checked' : ''}>
+                                <span class="font-medium">${aluno.nome}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function salvarEdicaoChamada(id) {
+            const presentes = Array.from(document.querySelectorAll('.chamada-checkbox:checked'))
+                .map(cb => cb.dataset.aluno);
+            
+            const chamadas = JSON.parse(localStorage.getItem('chamadas') || '[]');
+            const index = chamadas.findIndex(c => c.id === id);
+            
+            if (index !== -1) {
+                chamadas[index].presentes = presentes;
+                localStorage.setItem('chamadas', JSON.stringify(chamadas));
+                
+                // Atualizar status de presença dos alunos
+                const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+                alunos.forEach(aluno => {
+                    if (aluno.turma === chamadas[index].turma) {
+                        aluno.presente = presentes.includes(aluno.id);
+                    }
+                });
+                localStorage.setItem('alunos', JSON.stringify(alunos));
+                
+                alert('Chamada atualizada com sucesso!');
+                renderChamada();
+            }
+        }
+
+        function deletarChamada(id) {
+            if (confirm('Deseja realmente deletar esta chamada?')) {
+                const chamadas = JSON.parse(localStorage.getItem('chamadas') || '[]');
+                const novasChamadas = chamadas.filter(c => c.id !== id);
+                localStorage.setItem('chamadas', JSON.stringify(novasChamadas));
+                renderHistoricoChamadas();
+            }
+        }
+
+        // Funções de Missões
+        function renderMissoes() {
+            const missoes = JSON.parse(localStorage.getItem('missoes') || '[]');
+            const container = document.getElementById('listaMissoes');
+            
+            container.innerHTML = missoes.map(missao => `
+                <div class="bg-white rounded-lg shadow-md p-6 border-l-4 ${getDificuldadeCor(missao.dificuldade)}">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">${missao.titulo}</h3>
+                        <div class="flex space-x-2">
+                            <button onclick="editarMissao('${missao.id}')" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deletarMissao('${missao.id}')" class="text-red-500 hover:text-red-700">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 mb-4">${missao.descricao}</p>
+                    <div class="space-y-2 text-sm">
+                        <div><span class="font-semibold">Recompensa:</span> 💰 ${missao.recompensa} moedas</div>
+                        <div><span class="font-semibold">Categoria:</span> ${missao.categoria}</div>
+                        <div><span class="font-semibold">Dificuldade:</span> ${getDificuldadeIcon(missao.dificuldade)} ${missao.dificuldade}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getDificuldadeCor(dificuldade) {
+            switch(dificuldade) {
+                case 'facil': return 'border-green-500';
+                case 'media': return 'border-yellow-500';
+                case 'dificil': return 'border-red-500';
+                default: return 'border-gray-500';
+            }
+        }
+
+        function getDificuldadeIcon(dificuldade) {
+            switch(dificuldade) {
+                case 'facil': return '🟢';
+                case 'media': return '🟡';
+                case 'dificil': return '🔴';
+                default: return '⚪';
+            }
+        }
+
+        function salvarMissao() {
+            const titulo = document.getElementById('tituloMissao').value;
+            const descricao = document.getElementById('descricaoMissao').value;
+            const recompensa = document.getElementById('recompensaMissao').value;
+            const categoria = document.getElementById('categoriaMissao').value;
+            const dificuldade = document.getElementById('dificuldadeMissao').value;
+
+            if (!titulo || !descricao || !recompensa) {
+                alert('Por favor, preencha todos os campos obrigatórios.');
+                return;
+            }
+
+            const missoes = JSON.parse(localStorage.getItem('missoes') || '[]');
+            
+            if (currentEditingMission) {
+                const index = missoes.findIndex(m => m.id === currentEditingMission);
+                if (index !== -1) {
+                    missoes[index] = { ...missoes[index], titulo, descricao, recompensa: parseInt(recompensa), categoria, dificuldade };
+                }
+                currentEditingMission = null;
+            } else {
+                const novaMissao = {
+                    id: Date.now().toString(),
+                    titulo,
+                    descricao,
+                    recompensa: parseInt(recompensa),
+                    categoria,
+                    dificuldade
+                };
+                missoes.push(novaMissao);
+            }
+
+            localStorage.setItem('missoes', JSON.stringify(missoes));
+            closeModal('modalMissao');
+            renderMissoes();
+        }
+
+        function editarMissao(id) {
+            const missoes = JSON.parse(localStorage.getItem('missoes') || '[]');
+            const missao = missoes.find(m => m.id === id);
+            
+            if (missao) {
+                currentEditingMission = id;
+                document.getElementById('tituloMissao').value = missao.titulo;
+                document.getElementById('descricaoMissao').value = missao.descricao;
+                document.getElementById('recompensaMissao').value = missao.recompensa;
+                document.getElementById('categoriaMissao').value = missao.categoria;
+                document.getElementById('dificuldadeMissao').value = missao.dificuldade;
+                openModal('modalMissao');
+            }
+        }
+
+        function deletarMissao(id) {
+            if (confirm('Deseja realmente deletar esta missão?')) {
+                const missoes = JSON.parse(localStorage.getItem('missoes') || '[]');
+                const novasMissoes = missoes.filter(m => m.id !== id);
+                localStorage.setItem('missoes', JSON.stringify(novasMissoes));
+                renderMissoes();
+            }
+        }
+
+        // Funções da Loja
+        function renderLoja() {
+            const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
+            const container = document.getElementById('listaProdutos');
+            
+            container.innerHTML = produtos.map(produto => `
+                <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 overflow-hidden group relative" style="aspect-ratio: 5/7;">
+                    <!-- Imagem de fundo ocupando 100% -->
+                    <div class="absolute inset-0 bg-gradient-to-br from-slate-100 to-slate-200">
+                        ${produto.imagem ? 
+                            `<img src="${produto.imagem}" alt="${produto.nome}" class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" onerror="this.style.display='none'; this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center text-6xl\\'>🛍️</div>';">` : 
+                            `<div class="w-full h-full flex items-center justify-center text-6xl text-slate-400">🛍️</div>`
+                        }
+                    </div>
+                    
+                    <!-- Overlay escuro para melhor legibilidade -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                    
+                    <!-- Header com botões de ação -->
+                    <div class="absolute top-2 right-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div class="flex space-x-1">
+                            <button onclick="venderProduto('${produto.id}')" class="bg-green-500 hover:bg-green-600 text-white p-2 rounded-full shadow-lg transition-colors backdrop-blur-sm" title="Vender Produto">
+                                <i class="fas fa-shopping-cart text-xs"></i>
+                            </button>
+                            <button onclick="editarProduto('${produto.id}')" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full shadow-lg transition-colors backdrop-blur-sm" title="Editar Produto">
+                                <i class="fas fa-edit text-xs"></i>
+                            </button>
+                            <button onclick="deletarProduto('${produto.id}')" class="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full shadow-lg transition-colors backdrop-blur-sm" title="Deletar Produto">
+                                <i class="fas fa-trash text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Badge de vendas -->
+                    ${(produto.vendas || 0) > 0 ? `
+                        <div class="absolute top-2 left-2 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-lg backdrop-blur-sm z-10">
+                            ${produto.vendas} vendas
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Conteúdo sobreposto na parte inferior -->
+                    <div class="absolute bottom-0 left-0 right-0 p-3 z-10">
+                        <!-- Categoria -->
+                        <div class="mb-2">
+                            <span class="inline-block bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium border border-white/30">
+                                ${produto.categoria || 'Geral'}
+                            </span>
+                        </div>
+                        
+                        <!-- Título -->
+                        <h3 class="text-white font-bold mb-2 line-clamp-1 leading-tight text-shadow-lg">${produto.nome}</h3>
+                        
+                        <!-- Descrição -->
+                        <p class="text-white/90 text-xs mb-3 line-clamp-1 text-shadow">${produto.descricao}</p>
+                        
+                        <!-- Preço e botão de compra -->
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="text-lg font-bold text-white text-shadow-lg">
+                                💰 ${produto.valor} <span class="text-sm font-normal">moedas</span>
+                            </div>
+                        </div>
+                        
+                        <button onclick="venderProduto('${produto.id}')" class="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white py-2 px-3 rounded-lg font-semibold text-sm transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl backdrop-blur-sm border border-white/20">
+                            🛒 Comprar
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function salvarProduto() {
+            const nome = document.getElementById('nomeProduto').value;
+            const descricao = document.getElementById('descricaoProduto').value;
+            const imagem = document.getElementById('imagemProduto').value;
+            const valor = document.getElementById('valorProduto').value;
+            const categoria = document.getElementById('categoriaProduto').value;
+
+            if (!nome || !descricao || !valor) {
+                showNotification('Por favor, preencha todos os campos obrigatórios.', 'warning');
+                return;
+            }
+
+            const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
+            
+            if (currentEditingProduct) {
+                const index = produtos.findIndex(p => p.id === currentEditingProduct);
+                if (index !== -1) {
+                    produtos[index] = { ...produtos[index], nome, descricao, imagem, valor: parseInt(valor), categoria };
+                }
+                currentEditingProduct = null;
+                showNotification('Produto atualizado com sucesso!', 'success');
+            } else {
+                const novoProduto = {
+                    id: Date.now().toString(),
+                    nome,
+                    descricao,
+                    imagem,
+                    valor: parseInt(valor),
+                    categoria,
+                    vendas: 0
+                };
+                produtos.push(novoProduto);
+                showNotification(`Produto "${nome}" adicionado à loja!`, 'success');
+            }
+
+            localStorage.setItem('produtos', JSON.stringify(produtos));
+            closeModal('modalProduto');
+            renderLoja();
+        }
+
+        function venderProduto(produtoId) {
+            const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
+            const produto = produtos.find(p => p.id === produtoId);
+            
+            if (!produto) return;
+
+            // Mostrar informações do produto
+            document.getElementById('produtoVendaInfo').innerHTML = `
+                <div class="flex items-center space-x-3">
+                    ${produto.imagem ? `<img src="${produto.imagem}" alt="${produto.nome}" class="w-16 h-16 object-cover rounded" onerror="this.style.display='none'">` : ''}
+                    <div>
+                        <h4 class="font-semibold">${produto.nome}</h4>
+                        <p class="text-sm text-gray-600">${produto.descricao}</p>
+                        <p class="text-lg font-bold text-green-600">💰 ${produto.valor} moedas</p>
+                    </div>
+                </div>
+            `;
+
+            // Popular select de alunos
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const selectAluno = document.getElementById('alunoComprador');
+            selectAluno.innerHTML = '<option value="">Selecionar Aluno</option>';
+            
+            alunos.forEach(aluno => {
+                const option = document.createElement('option');
+                option.value = aluno.id;
+                option.textContent = `${aluno.nome} (${aluno.turma}) - 💰 ${aluno.moedas || 0}`;
+                selectAluno.appendChild(option);
+            });
+
+            // Event listener para mudança de aluno
+            selectAluno.onchange = function() {
+                verificarCompra(this.value, produto);
+            };
+
+            // Armazenar produto atual para venda
+            window.currentProductForSale = produto;
+            
+            openModal('modalVenda');
+        }
+
+        function verificarCompra(alunoId, produto) {
+            const infoDiv = document.getElementById('infoAluno');
+            const moedasSpan = document.getElementById('moedasAluno');
+            const statusDiv = document.getElementById('statusCompra');
+            const btnConfirmar = document.getElementById('btnConfirmarVenda');
+
+            if (!alunoId) {
+                infoDiv.classList.add('hidden');
+                btnConfirmar.disabled = true;
+                return;
+            }
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const aluno = alunos.find(a => a.id === alunoId);
+            
+            if (!aluno) return;
+
+            const moedasAluno = aluno.moedas || 0;
+            moedasSpan.textContent = moedasAluno;
+            
+            if (moedasAluno >= produto.valor) {
+                statusDiv.innerHTML = '<div class="text-green-600 font-semibold">✅ Pode comprar este produto!</div>';
+                statusDiv.className = 'mt-2 text-green-600';
+                btnConfirmar.disabled = false;
+                btnConfirmar.className = 'bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex-1';
+            } else {
+                const faltam = produto.valor - moedasAluno;
+                statusDiv.innerHTML = `<div class="text-red-600 font-semibold">❌ Faltam ${faltam} moedas para comprar</div>`;
+                statusDiv.className = 'mt-2 text-red-600';
+                btnConfirmar.disabled = true;
+                btnConfirmar.className = 'bg-gray-400 text-white px-4 py-2 rounded-lg flex-1 cursor-not-allowed';
+            }
+
+            infoDiv.classList.remove('hidden');
+        }
+
+        function confirmarVenda() {
+            const alunoId = document.getElementById('alunoComprador').value;
+            const produto = window.currentProductForSale;
+
+            if (!alunoId || !produto) return;
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const alunoIndex = alunos.findIndex(a => a.id === alunoId);
+            
+            if (alunoIndex === -1) return;
+
+            const aluno = alunos[alunoIndex];
+            
+            // Verificar se ainda tem moedas suficientes
+            if ((aluno.moedas || 0) < produto.valor) {
+                showNotification('Aluno não possui moedas suficientes!', 'error');
+                return;
+            }
+
+            // Deduzir moedas do aluno
+            alunos[alunoIndex].moedas = (aluno.moedas || 0) - produto.valor;
+            localStorage.setItem('alunos', JSON.stringify(alunos));
+
+            // Incrementar vendas do produto
+            const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
+            const produtoIndex = produtos.findIndex(p => p.id === produto.id);
+            if (produtoIndex !== -1) {
+                produtos[produtoIndex].vendas = (produtos[produtoIndex].vendas || 0) + 1;
+                localStorage.setItem('produtos', JSON.stringify(produtos));
+            }
+
+            // Registrar a compra no histórico
+            const compras = JSON.parse(localStorage.getItem('compras') || '[]');
+            const novaCompra = {
+                id: Date.now().toString(),
+                alunoId: aluno.id,
+                alunoNome: aluno.nome,
+                produtoId: produto.id,
+                produtoNome: produto.nome,
+                valor: produto.valor,
+                data: new Date().toLocaleDateString('pt-BR'),
+                hora: new Date().toLocaleTimeString('pt-BR')
+            };
+            compras.push(novaCompra);
+            localStorage.setItem('compras', JSON.stringify(compras));
+
+            showNotification(`${aluno.nome} comprou "${produto.nome}" por ${produto.valor} moedas!`, 'success');
+            
+            closeModal('modalVenda');
+            renderLoja();
+            
+            // Atualizar lista de alunos se estivermos na seção de alunos
+            if (currentSection === 'alunos') {
+                renderAlunos();
+            }
+        }
+
+        function editarProduto(id) {
+            const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
+            const produto = produtos.find(p => p.id === id);
+            
+            if (produto) {
+                currentEditingProduct = id;
+                document.getElementById('nomeProduto').value = produto.nome;
+                document.getElementById('descricaoProduto').value = produto.descricao;
+                document.getElementById('imagemProduto').value = produto.imagem || '';
+                document.getElementById('valorProduto').value = produto.valor;
+                document.getElementById('categoriaProduto').value = produto.categoria;
+                openModal('modalProduto');
+            }
+        }
+
+        function deletarProduto(id) {
+            if (confirm('Deseja realmente deletar este produto?')) {
+                const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
+                const novosProdutos = produtos.filter(p => p.id !== id);
+                localStorage.setItem('produtos', JSON.stringify(novosProdutos));
+                renderLoja();
+            }
+        }
+
+        function exportarLoja() {
+            const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
+            const dataStr = JSON.stringify(produtos, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'loja-produtos.json';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function toggleHistoricoCompras() {
+            const historico = document.getElementById('historicoCompras');
+            const isHidden = historico.classList.contains('hidden');
+            
+            if (isHidden) {
+                renderHistoricoCompras();
+                historico.classList.remove('hidden');
+            } else {
+                historico.classList.add('hidden');
+            }
+        }
+
+        function renderHistoricoCompras() {
+            const compras = JSON.parse(localStorage.getItem('compras') || '[]');
+            const container = document.getElementById('listaCompras');
+            
+            if (compras.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-8">Nenhuma compra realizada ainda.</p>';
+                return;
+            }
+
+            // Ordenar por data mais recente
+            const comprasOrdenadas = compras.sort((a, b) => new Date(b.data + ' ' + b.hora) - new Date(a.data + ' ' + a.hora));
+
+            container.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left">Data/Hora</th>
+                                <th class="px-4 py-2 text-left">Aluno</th>
+                                <th class="px-4 py-2 text-left">Produto</th>
+                                <th class="px-4 py-2 text-left">Valor</th>
+                                <th class="px-4 py-2 text-left">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            ${comprasOrdenadas.map(compra => `
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-2">
+                                        <div class="text-sm">${compra.data}</div>
+                                        <div class="text-xs text-gray-500">${compra.hora}</div>
+                                    </td>
+                                    <td class="px-4 py-2 font-medium">${compra.alunoNome}</td>
+                                    <td class="px-4 py-2">${compra.produtoNome}</td>
+                                    <td class="px-4 py-2">
+                                        <span class="font-semibold text-green-600">💰 ${compra.valor}</span>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <button onclick="estornarCompra('${compra.id}')" class="text-red-500 hover:text-red-700 text-xs" title="Estornar compra">
+                                            <i class="fas fa-undo"></i> Estornar
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <strong>Total de compras:</strong> ${compras.length} | 
+                    <strong>Valor total:</strong> 💰 ${compras.reduce((total, compra) => total + compra.valor, 0)}
+                </div>
+            `;
+        }
+
+        function estornarCompra(compraId) {
+            if (!confirm('Deseja realmente estornar esta compra? As moedas serão devolvidas ao aluno.')) {
+                return;
+            }
+
+            const compras = JSON.parse(localStorage.getItem('compras') || '[]');
+            const compraIndex = compras.findIndex(c => c.id === compraId);
+            
+            if (compraIndex === -1) {
+                showNotification('Compra não encontrada!', 'error');
+                return;
+            }
+
+            const compra = compras[compraIndex];
+
+            // Devolver moedas ao aluno
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const alunoIndex = alunos.findIndex(a => a.id === compra.alunoId);
+            
+            if (alunoIndex !== -1) {
+                alunos[alunoIndex].moedas = (alunos[alunoIndex].moedas || 0) + compra.valor;
+                localStorage.setItem('alunos', JSON.stringify(alunos));
+            }
+
+            // Decrementar vendas do produto
+            const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
+            const produtoIndex = produtos.findIndex(p => p.id === compra.produtoId);
+            if (produtoIndex !== -1 && produtos[produtoIndex].vendas > 0) {
+                produtos[produtoIndex].vendas = produtos[produtoIndex].vendas - 1;
+                localStorage.setItem('produtos', JSON.stringify(produtos));
+            }
+
+            // Remover compra do histórico
+            compras.splice(compraIndex, 1);
+            localStorage.setItem('compras', JSON.stringify(compras));
+
+            showNotification(`Compra estornada! ${compra.valor} moedas devolvidas para ${compra.alunoNome}`, 'success');
+            
+            renderHistoricoCompras();
+            renderLoja();
+            
+            // Atualizar lista de alunos se estivermos na seção de alunos
+            if (currentSection === 'alunos') {
+                renderAlunos();
+            }
+        }
+
+        // Funções de Relatórios
+        function renderRelatorios() {
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const chamadas = JSON.parse(localStorage.getItem('chamadas') || '[]');
+            const container = document.getElementById('relatoriosContent');
+
+            // Top 5 Moedas
+            const topMoedas = alunos.sort((a, b) => (b.moedas || 0) - (a.moedas || 0)).slice(0, 5);
+            
+            // Top 5 Progresso
+            const topProgresso = alunos.sort((a, b) => (b.progresso || 0) - (a.progresso || 0)).slice(0, 5);
+            
+            // Top 5 Estrelas
+            const topEstrelas = alunos.sort((a, b) => (b.estrelas || 0) - (a.estrelas || 0)).slice(0, 5);
+
+            // Aniversariantes do mês
+            const mesAtual = new Date().getMonth() + 1;
+            const aniversariantes = alunos.filter(aluno => {
+                if (!aluno.aniversario) return false;
+                const mesAniversario = new Date(aluno.aniversario + 'T00:00:00').getMonth() + 1;
+                return mesAniversario === mesAtual;
+            });
+
+            // Frequência geral
+            const frequenciaGeral = alunos.length > 0 ? 
+                Math.round(alunos.reduce((acc, aluno) => acc + calcularFrequencia(aluno.id), 0) / alunos.length) : 0;
+
+            // Top 5 presença
+            const topPresenca = alunos.map(aluno => ({
+                ...aluno,
+                frequencia: calcularFrequencia(aluno.id)
+            })).sort((a, b) => b.frequencia - a.frequencia).slice(0, 5);
+
+            // 5 alunos com baixa frequência
+            const baixaFrequencia = alunos.map(aluno => ({
+                ...aluno,
+                frequencia: calcularFrequencia(aluno.id)
+            })).filter(aluno => aluno.frequencia < 75).sort((a, b) => a.frequencia - b.frequencia).slice(0, 5);
+
+            container.innerHTML = `
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-4">🏆 Top 5 Moedas</h3>
+                    <div class="space-y-2">
+                        ${topMoedas.map((aluno, index) => `
+                            <div class="flex justify-between items-center p-2 ${index === 0 ? 'bg-yellow-100' : 'bg-gray-50'} rounded">
+                                <span>${index + 1}. ${aluno.nome}</span>
+                                <span class="font-semibold">💰 ${aluno.moedas || 0}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-4">📈 Top 5 Progresso</h3>
+                    <div class="space-y-2">
+                        ${topProgresso.map((aluno, index) => `
+                            <div class="flex justify-between items-center p-2 ${index === 0 ? 'bg-blue-100' : 'bg-gray-50'} rounded">
+                                <span>${index + 1}. ${aluno.nome}</span>
+                                <span class="font-semibold">${aluno.progresso || 0} pts</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-4">⭐ Top 5 Estrelas</h3>
+                    <div class="space-y-2">
+                        ${topEstrelas.map((aluno, index) => `
+                            <div class="flex justify-between items-center p-2 ${index === 0 ? 'bg-purple-100' : 'bg-gray-50'} rounded">
+                                <span>${index + 1}. ${aluno.nome}</span>
+                                <span class="font-semibold">⭐ ${aluno.estrelas || 0}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-4">🎂 Aniversariantes do Mês</h3>
+                    <div class="space-y-2">
+                        ${aniversariantes.length > 0 ? aniversariantes.map(aluno => `
+                            <div class="flex justify-between items-center p-2 bg-pink-100 rounded">
+                                <span>${aluno.nome}</span>
+                                <span class="font-semibold">${new Date(aluno.aniversario + 'T00:00:00').toLocaleDateString('pt-BR')}</span>
+                            </div>
+                        `).join('') : '<p class="text-gray-500">Nenhum aniversariante este mês</p>'}
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-4">📊 Frequência Geral</h3>
+                    <div class="text-center">
+                        <div class="text-4xl font-bold text-blue-600">${frequenciaGeral}%</div>
+                        <p class="text-gray-600">Frequência média da turma</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-4">✅ Top 5 Presença</h3>
+                    <div class="space-y-2">
+                        ${topPresenca.map((aluno, index) => `
+                            <div class="flex justify-between items-center p-2 ${index === 0 ? 'bg-green-100' : 'bg-gray-50'} rounded">
+                                <span>${index + 1}. ${aluno.nome}</span>
+                                <span class="font-semibold">${aluno.frequencia}%</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h3 class="text-lg font-semibold mb-4">⚠️ Baixa Frequência</h3>
+                    <div class="space-y-2">
+                        ${baixaFrequencia.length > 0 ? baixaFrequencia.map(aluno => `
+                            <div class="flex justify-between items-center p-2 bg-red-100 rounded">
+                                <span class="text-red-700">${aluno.nome}</span>
+                                <span class="font-semibold text-red-700">${aluno.frequencia}%</span>
+                            </div>
+                        `).join('') : '<p class="text-gray-500">Todos os alunos com boa frequência!</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Funções de Ferramentas
+        function sortearIndividual() {
+            const turma = document.getElementById('turmaSorteio').value;
+            if (!turma) {
+                showNotification('Selecione uma turma primeiro!', 'warning');
+                return;
+            }
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const alunosTurma = alunos.filter(a => a.turma === turma);
+            
+            if (alunosTurma.length === 0) {
+                showNotification('Nenhum aluno encontrado nesta turma!', 'warning');
+                return;
+            }
+
+            const eliminarSorteados = document.getElementById('eliminarSorteados').checked;
+            let alunosDisponiveis = alunosTurma;
+
+            // Se a opção de eliminar estiver ativada, filtrar os já sorteados
+            if (eliminarSorteados) {
+                alunosDisponiveis = alunosTurma.filter(a => !alunosSorteados.includes(a.id));
+                
+                if (alunosDisponiveis.length === 0) {
+                    showNotification('Todos os alunos já foram sorteados! Use o botão "Resetar Sorteios".', 'info');
+                    return;
+                }
+            }
+
+            // Iniciar animação de sorteio
+            iniciarAnimacaoSorteio(alunosDisponiveis, eliminarSorteados);
+        }
+
+        function iniciarAnimacaoSorteio(alunosDisponiveis, eliminarSorteados) {
+            const resultadoDiv = document.getElementById('resultadoSorteio');
+            
+            // Mostrar animação de carregamento
+            resultadoDiv.innerHTML = `
+                <div class="text-center p-6">
+                    <div class="animate-spin w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <h4 class="text-lg font-semibold text-blue-600 mb-4">🎲 Sorteando...</h4>
+                    <div id="nomesSorteando" class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 min-h-[60px] flex items-center justify-center">
+                        <span class="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600" id="nomeAnimado">
+                            Preparando...
+                        </span>
+                    </div>
+                    <div class="mt-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="barraProgresso" class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-100" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Animação de nomes passando rapidamente
+            let contador = 0;
+            const totalAnimacao = 30; // 3 segundos de animação
+            const nomeAnimado = document.getElementById('nomeAnimado');
+            const barraProgresso = document.getElementById('barraProgresso');
+            
+            const intervalo = setInterval(() => {
+                // Mostrar nome aleatório
+                const nomeAleatorio = alunosDisponiveis[Math.floor(Math.random() * alunosDisponiveis.length)];
+                nomeAnimado.textContent = nomeAleatorio.nome;
+                
+                // Atualizar barra de progresso
+                const progresso = (contador / totalAnimacao) * 100;
+                barraProgresso.style.width = progresso + '%';
+                
+                contador++;
+                
+                if (contador >= totalAnimacao) {
+                    clearInterval(intervalo);
+                    finalizarSorteio(alunosDisponiveis, eliminarSorteados);
+                }
+            }, 100);
+        }
+
+        function finalizarSorteio(alunosDisponiveis, eliminarSorteados) {
+            const sorteado = alunosDisponiveis[Math.floor(Math.random() * alunosDisponiveis.length)];
+            
+            // Adicionar à lista de sorteados se a eliminação estiver ativa
+            if (eliminarSorteados && !alunosSorteados.includes(sorteado.id)) {
+                alunosSorteados.push(sorteado.id);
+                atualizarListaSorteados();
+            }
+
+            const restantes = eliminarSorteados ? alunosDisponiveis.length - 1 : alunosDisponiveis.length;
+
+            // Mostrar resultado final com animação
+            document.getElementById('resultadoSorteio').innerHTML = `
+                <div class="text-center p-4">
+                    <h4 class="text-lg font-semibold text-green-600 mb-4 animate-bounce">🎯 Aluno Sorteado!</h4>
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-6 mb-4 border-2 border-green-200 transform animate-pulse">
+                        <div class="text-4xl mb-2">🎉</div>
+                        <p class="text-2xl font-bold text-green-800 mb-2 animate-fadeIn">${sorteado.nome}</p>
+                        <p class="text-sm text-green-600">Turma: ${sorteado.turma}</p>
+                    </div>
+                    ${eliminarSorteados ? `<p class="text-xs text-gray-500">Restam ${restantes} alunos para sortear</p>` : ''}
+                    <div class="mt-4">
+                        <button onclick="sortearIndividual()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 text-sm rounded-lg transition-colors">
+                            🎲 Sortear Novamente
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Adicionar confetes (efeito visual)
+            criarConfetes();
+        }
+
+        function sortearEquipe() {
+            const turma = document.getElementById('turmaSorteio').value;
+            const numeroEquipes = parseInt(document.getElementById('numeroEquipes').value) || 2;
+            
+            if (!turma) {
+                showNotification('Selecione uma turma primeiro!', 'warning');
+                return;
+            }
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const alunosTurma = alunos.filter(a => a.turma === turma);
+
+            if (alunosTurma.length < numeroEquipes) {
+                showNotification(`Pelo menos ${numeroEquipes} alunos são necessários para formar ${numeroEquipes} equipes!`, 'warning');
+                return;
+            }
+
+            // Iniciar animação de sorteio de equipes
+            iniciarAnimacaoSorteioEquipes(alunosTurma, numeroEquipes);
+        }
+
+        function iniciarAnimacaoSorteioEquipes(alunosTurma, numeroEquipes) {
+            const resultadoDiv = document.getElementById('resultadoSorteio');
+            
+            // Mostrar animação de carregamento
+            resultadoDiv.innerHTML = `
+                <div class="text-center p-6">
+                    <div class="animate-spin w-12 h-12 border-4 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+                    <h4 class="text-lg font-semibold text-purple-600 mb-4">👥 Formando Equipes...</h4>
+                    <div id="equipesAnimacao" class="bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg p-4 min-h-[120px] flex flex-col items-center justify-center">
+                        <div class="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-pink-600 mb-2" id="statusEquipes">
+                            Embaralhando alunos...
+                        </div>
+                        <div id="nomesEquipesAnimacao" class="text-sm text-gray-600 text-center">
+                            Preparando...
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div id="barraProgressoEquipes" class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-100" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Animação de formação de equipes
+            let contador = 0;
+            const totalAnimacao = 35; // 3.5 segundos de animação
+            const statusEquipes = document.getElementById('statusEquipes');
+            const nomesEquipesAnimacao = document.getElementById('nomesEquipesAnimacao');
+            const barraProgressoEquipes = document.getElementById('barraProgressoEquipes');
+            
+            const fases = [
+                { min: 0, max: 10, status: 'Embaralhando alunos...', acao: () => mostrarNomesAleatorios(alunosTurma, nomesEquipesAnimacao) },
+                { min: 10, max: 20, status: 'Dividindo em grupos...', acao: () => mostrarDivisaoEquipes(numeroEquipes, nomesEquipesAnimacao) },
+                { min: 20, max: 30, status: 'Balanceando equipes...', acao: () => mostrarBalanceamento(nomesEquipesAnimacao) },
+                { min: 30, max: 35, status: 'Finalizando...', acao: () => mostrarFinalizacao(nomesEquipesAnimacao) }
+            ];
+            
+            const intervalo = setInterval(() => {
+                // Determinar fase atual
+                const faseAtual = fases.find(fase => contador >= fase.min && contador < fase.max);
+                if (faseAtual) {
+                    statusEquipes.textContent = faseAtual.status;
+                    faseAtual.acao();
+                }
+                
+                // Atualizar barra de progresso
+                const progresso = (contador / totalAnimacao) * 100;
+                barraProgressoEquipes.style.width = progresso + '%';
+                
+                contador++;
+                
+                if (contador >= totalAnimacao) {
+                    clearInterval(intervalo);
+                    finalizarSorteioEquipes(alunosTurma, numeroEquipes);
+                }
+            }, 100);
+        }
+
+        function mostrarNomesAleatorios(alunos, container) {
+            const nomesAleatorios = [];
+            for (let i = 0; i < 3; i++) {
+                const alunoAleatorio = alunos[Math.floor(Math.random() * alunos.length)];
+                nomesAleatorios.push(alunoAleatorio.nome);
+            }
+            container.innerHTML = nomesAleatorios.join(' • ');
+        }
+
+        function mostrarDivisaoEquipes(numeroEquipes, container) {
+            const emojis = ['🔵', '🔴', '🟢', '🟡', '🟣', '🩷', '🔵', '🟠', '🔷', '💎'];
+            const equipesVisiveis = [];
+            for (let i = 0; i < numeroEquipes; i++) {
+                equipesVisiveis.push(`${emojis[i]} Equipe ${i + 1}`);
+            }
+            container.innerHTML = equipesVisiveis.join(' | ');
+        }
+
+        function mostrarBalanceamento(container) {
+            const balanceamentos = [
+                'Ajustando tamanhos...',
+                'Distribuindo membros...',
+                'Equilibrando forças...',
+                'Organizando grupos...'
+            ];
+            const textoAleatorio = balanceamentos[Math.floor(Math.random() * balanceamentos.length)];
+            container.innerHTML = textoAleatorio;
+        }
+
+        function mostrarFinalizacao(container) {
+            container.innerHTML = '✨ Equipes prontas! ✨';
+        }
+
+        function finalizarSorteioEquipes(alunosTurma, numeroEquipes) {
+            // Embaralhar alunos
+            const embaralhados = [...alunosTurma].sort(() => Math.random() - 0.5);
+            
+            // Dividir em equipes
+            const equipes = [];
+            const tamanhoBase = Math.floor(embaralhados.length / numeroEquipes);
+            const resto = embaralhados.length % numeroEquipes;
+            
+            let indiceAtual = 0;
+            for (let i = 0; i < numeroEquipes; i++) {
+                const tamanhoEquipe = tamanhoBase + (i < resto ? 1 : 0);
+                equipes.push(embaralhados.slice(indiceAtual, indiceAtual + tamanhoEquipe));
+                indiceAtual += tamanhoEquipe;
+            }
+
+            // Cores para as equipes
+            const coresEquipes = [
+                { bg: 'bg-blue-100', text: 'text-blue-700', emoji: '🔵', border: 'border-blue-300' },
+                { bg: 'bg-red-100', text: 'text-red-700', emoji: '🔴', border: 'border-red-300' },
+                { bg: 'bg-green-100', text: 'text-green-700', emoji: '🟢', border: 'border-green-300' },
+                { bg: 'bg-yellow-100', text: 'text-yellow-700', emoji: '🟡', border: 'border-yellow-300' },
+                { bg: 'bg-purple-100', text: 'text-purple-700', emoji: '🟣', border: 'border-purple-300' },
+                { bg: 'bg-pink-100', text: 'text-pink-700', emoji: '🩷', border: 'border-pink-300' },
+                { bg: 'bg-indigo-100', text: 'text-indigo-700', emoji: '🔵', border: 'border-indigo-300' },
+                { bg: 'bg-orange-100', text: 'text-orange-700', emoji: '🟠', border: 'border-orange-300' },
+                { bg: 'bg-teal-100', text: 'text-teal-700', emoji: '🔷', border: 'border-teal-300' },
+                { bg: 'bg-cyan-100', text: 'text-cyan-700', emoji: '💎', border: 'border-cyan-300' }
+            ];
+
+            const equipesHtml = equipes.map((equipe, index) => {
+                const cor = coresEquipes[index % coresEquipes.length];
+                return `
+                    <div class="${cor.bg} ${cor.border} p-4 rounded-xl border-2 transform animate-slideInUp shadow-lg hover:shadow-xl transition-all duration-300" style="animation-delay: ${index * 0.1}s">
+                        <h4 class="font-bold ${cor.text} mb-3 text-center text-base">
+                            ${cor.emoji} Equipe ${index + 1}
+                        </h4>
+                        <div class="text-center mb-2">
+                            <span class="text-xs ${cor.text} bg-white px-2 py-1 rounded-full font-medium">
+                                ${equipe.length} membros
+                            </span>
+                        </div>
+                        <div class="space-y-2">
+                            ${equipe.map((aluno, alunoIndex) => `
+                                <div class="bg-white bg-opacity-70 px-3 py-2 rounded-lg text-sm font-medium text-gray-800 transform animate-fadeIn" style="animation-delay: ${(index * 0.1) + (alunoIndex * 0.05)}s">
+                                    ${aluno.nome}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('resultadoSorteio').innerHTML = `
+                <div class="p-4">
+                    <h4 class="text-center font-bold text-purple-600 mb-6 text-lg animate-bounce">
+                        🎉 Equipes Formadas com Sucesso! 🎉
+                    </h4>
+                    <div class="grid grid-cols-1 ${numeroEquipes <= 2 ? 'sm:grid-cols-2' : numeroEquipes <= 3 ? 'sm:grid-cols-3' : 'sm:grid-cols-2 lg:grid-cols-3'} gap-4">
+                        ${equipesHtml}
+                    </div>
+                    <div class="text-center mt-6">
+                        <button onclick="sortearEquipe()" class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white px-6 py-3 text-sm rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                            🔄 Sortear Novamente
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Adicionar confetes para celebrar
+            criarConfetes();
+        }
+
+        function resetarSorteios() {
+            alunosSorteados = [];
+            document.getElementById('resultadoSorteio').innerHTML = '<div class="flex items-center justify-center text-gray-500 text-sm">Selecione uma turma e clique em sortear</div>';
+            document.getElementById('listaSorteados').classList.add('hidden');
+            showNotification('Lista de sorteios resetada!', 'info');
+        }
+
+        function atualizarListaSorteados() {
+            const listaSorteados = document.getElementById('listaSorteados');
+            const nomesSorteados = document.getElementById('nomesSorteados');
+            
+            if (alunosSorteados.length === 0) {
+                listaSorteados.classList.add('hidden');
+                return;
+            }
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            const nomesSorteadosArray = alunosSorteados.map(id => {
+                const aluno = alunos.find(a => a.id === id);
+                return aluno ? aluno.nome : 'Aluno não encontrado';
+            });
+
+            nomesSorteados.innerHTML = nomesSorteadosArray.join(', ');
+            listaSorteados.classList.remove('hidden');
+        }
+
+        function aplicarRecompensas() {
+            const turma = document.getElementById('turmaRecompensa').value;
+            const moedas = parseInt(document.getElementById('valorMoedas').value) || 0;
+            const estrelas = parseInt(document.getElementById('valorEstrelas').value) || 0;
+
+            if (!turma) {
+                alert('Selecione uma turma primeiro!');
+                return;
+            }
+
+            if (moedas === 0 && estrelas === 0) {
+                alert('Digite um valor para moedas ou estrelas!');
+                return;
+            }
+
+            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+            let alunosAfetados = 0;
+
+            alunos.forEach(aluno => {
+                if (aluno.turma === turma && aluno.presente) {
+                    aluno.moedas = (aluno.moedas || 0) + moedas;
+                    aluno.estrelas = (aluno.estrelas || 0) + estrelas;
+                    alunosAfetados++;
+                }
+            });
+
+            localStorage.setItem('alunos', JSON.stringify(alunos));
+            alert(`Recompensas aplicadas para ${alunosAfetados} alunos presentes!`);
+            
+            // Limpar campos
+            document.getElementById('valorMoedas').value = '';
+            document.getElementById('valorEstrelas').value = '';
+        }
+
+        function criarConfetes() {
+            // Criar efeito de confetes
+            const cores = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd', '#98d8c8'];
+            const container = document.body;
+            
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confete = document.createElement('div');
+                    confete.style.position = 'fixed';
+                    confete.style.left = Math.random() * 100 + 'vw';
+                    confete.style.top = '-10px';
+                    confete.style.width = '10px';
+                    confete.style.height = '10px';
+                    confete.style.backgroundColor = cores[Math.floor(Math.random() * cores.length)];
+                    confete.style.borderRadius = '50%';
+                    confete.style.pointerEvents = 'none';
+                    confete.style.zIndex = '9999';
+                    confete.style.animation = `confeteFall ${2 + Math.random() * 3}s linear forwards`;
+                    
+                    container.appendChild(confete);
+                    
+                    setTimeout(() => {
+                        if (confete.parentNode) {
+                            confete.parentNode.removeChild(confete);
+                        }
+                    }, 5000);
+                }, i * 50);
+            }
+        }
+
+        async function buscarFrase() {
+            const fraseDiaDiv = document.getElementById('fraseDia');
+            
+            // Mostrar loading
+            fraseDiaDiv.innerHTML = `
+                <div class="flex items-center justify-center space-x-2">
+                    <div class="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full"></div>
+                    <span class="text-gray-500">Buscando frase inspiradora...</span>
+                </div>
+            `;
+
+            try {
+                // Tentar buscar da API Pensador
+                const response = await fetch('https://pensador-api.vercel.app/');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data && data.frase && data.autor) {
+                        fraseDiaDiv.innerHTML = `
+                            <div class="text-center">
+                                <p class="text-lg italic text-gray-700 mb-2">"${data.frase}"</p>
+                                <p class="text-sm text-gray-500">— ${data.autor}</p>
+                            </div>
+                        `;
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.log('Erro ao buscar frase da API:', error);
+            }
+
+            // Fallback para frases locais se a API falhar
+            const frases = [
+                { frase: "O sucesso é a soma de pequenos esforços repetidos dia após dia.", autor: "Robert Collier" },
+                { frase: "A educação é a arma mais poderosa que você pode usar para mudar o mundo.", autor: "Nelson Mandela" },
+                { frase: "O conhecimento é o único bem que aumenta quando é compartilhado.", autor: "Provérbio" },
+                { frase: "Não pare quando estiver cansado, pare quando tiver terminado.", autor: "Marilyn Monroe" },
+                { frase: "A criatividade é a inteligência se divertindo.", autor: "Albert Einstein" },
+                { frase: "O futuro pertence àqueles que acreditam na beleza de seus sonhos.", autor: "Eleanor Roosevelt" },
+                { frase: "Aprender é descobrir aquilo que você já sabe. Fazer é demonstrar que você o sabe.", autor: "Richard Bach" },
+                { frase: "A tecnologia é melhor quando aproxima as pessoas.", autor: "Matt Mullenweg" },
+                { frase: "A única forma de fazer um excelente trabalho é amar o que você faz.", autor: "Steve Jobs" },
+                { frase: "Seja você mesmo; todos os outros já foram tomados.", autor: "Oscar Wilde" }
+            ];
+
+            const fraseAleatoria = frases[Math.floor(Math.random() * frases.length)];
+            fraseDiaDiv.innerHTML = `
+                <div class="text-center">
+                    <p class="text-lg italic text-gray-700 mb-2">"${fraseAleatoria.frase}"</p>
+                    <p class="text-sm text-gray-500">— ${fraseAleatoria.autor}</p>
+                </div>
+            `;
+        }
+
+        // Funções de Import/Export
+        function exportData() {
+            const dados = {
+                alunos: JSON.parse(localStorage.getItem('alunos') || '[]'),
+                missoes: JSON.parse(localStorage.getItem('missoes') || '[]'),
+                produtos: JSON.parse(localStorage.getItem('produtos') || '[]'),
+                chamadas: JSON.parse(localStorage.getItem('chamadas') || '[]'),
+                compras: JSON.parse(localStorage.getItem('compras') || '[]')
+            };
+
+            const dataStr = JSON.stringify(dados, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            const hoje = new Date();
+            const dataFormatada = `${hoje.getDate().toString().padStart(2, '0')}-${(hoje.getMonth() + 1).toString().padStart(2, '0')}-${hoje.getFullYear()}`;
+            link.download = `backup-edugame-${dataFormatada}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        function importData() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        try {
+                            const dados = JSON.parse(e.target.result);
+                            
+                            if (dados.alunos) localStorage.setItem('alunos', JSON.stringify(dados.alunos));
+                            if (dados.missoes) localStorage.setItem('missoes', JSON.stringify(dados.missoes));
+                            if (dados.produtos) localStorage.setItem('produtos', JSON.stringify(dados.produtos));
+                            if (dados.chamadas) localStorage.setItem('chamadas', JSON.stringify(dados.chamadas));
+                            if (dados.compras) localStorage.setItem('compras', JSON.stringify(dados.compras));
+                            
+                            showNotification('Dados importados com sucesso!', 'success');
+                            location.reload();
+                        } catch (error) {
+                            showNotification('Erro ao importar dados. Verifique se o arquivo está correto.', 'error');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'980ce2eee6cbdf57',t:'MTc1ODE1NzAxNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
