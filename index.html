@@ -1023,14 +1023,14 @@
     <script>
         // Firebase Configuration
         const firebaseConfig = {
-  apiKey: "AIzaSyAKauj-JErrJagryaQ_pv6c76rA3rdTTdQ",
-  authDomain: "gestaomakerpro.firebaseapp.com",
-  projectId: "gestaomakerpro",
-  storageBucket: "gestaomakerpro.firebasestorage.app",
-  messagingSenderId: "228977094321",
-  appId: "1:228977094321:web:7d8445e1431cb70f5cbc90",
-  measurementId: "G-YQL7TDN8XM"
-};
+            apiKey: "AIzaSyA4Xs1M_pZTEPcIKTCiwfTB6VRckdRa3tk",
+            authDomain: "gestao-maker.firebaseapp.com",
+            projectId: "gestao-maker",
+            storageBucket: "gestao-maker.firebasestorage.app",
+            messagingSenderId: "869350644479",
+            appId: "1:869350644479:web:81b5e07d86d8130bf88aca",
+            measurementId: "G-HK1ZS44HT9"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -1122,66 +1122,292 @@
         }
 
         async function loginAluno() {
-            try {
-                const provider = new firebase.auth.GoogleAuthProvider();
+            // Mostrar tela de login personalizada para alunos
+            showStudentLoginForm();
+        }
+
+        function showStudentLoginForm() {
+            document.getElementById('studentLogin').innerHTML = `
+                <div class="text-center">
+                    <button onclick="showProfessorLogin()" class="text-blue-600 hover:text-blue-800 mb-4">
+                        <i class="fas fa-arrow-left mr-1"></i> Voltar
+                    </button>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">Área do Aluno</h2>
+                    <p class="text-sm text-gray-600 mb-6">Faça login ou crie sua conta</p>
+                </div>
                 
-                // Configurações específicas para alunos
-                provider.setCustomParameters({
-                    'prompt': 'select_account',
-                    'hd': 'aluno.barueri.br' // Domínio específico para alunos
+                <!-- Formulário de Login -->
+                <div id="studentLoginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Usuário:</label>
+                        <input type="text" id="studentUsername" placeholder="Ex: joao.silva.0512" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <p class="text-xs text-gray-500 mt-1">Use: nome.sobrenome.diames (ex: joao.silva.0512)</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Senha:</label>
+                        <input type="password" id="studentPassword" placeholder="Data de aniversário (ddmmaaaa)" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
+                        <p class="text-xs text-gray-500 mt-1">Ex: 05122010 (05/12/2010)</p>
+                    </div>
+                    <button onclick="processStudentLogin()" class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        Entrar
+                    </button>
+                </div>
+
+                <div class="relative my-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-300"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-2 bg-white text-gray-500">ou</span>
+                    </div>
+                </div>
+
+                <!-- Botão para Cadastro -->
+                <button onclick="showStudentRegisterForm()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    Criar Nova Conta
+                </button>
+            `;
+        }
+
+        function showStudentRegisterForm() {
+            document.getElementById('studentLogin').innerHTML = `
+                <div class="text-center">
+                    <button onclick="showStudentLoginForm()" class="text-blue-600 hover:text-blue-800 mb-4">
+                        <i class="fas fa-arrow-left mr-1"></i> Voltar ao Login
+                    </button>
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">Criar Conta de Aluno</h2>
+                    <p class="text-sm text-gray-600 mb-6">Preencha seus dados para criar sua conta</p>
+                </div>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo:</label>
+                        <input type="text" id="registerStudentName" placeholder="Ex: João Silva Santos" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Turma:</label>
+                        <select id="registerStudentClass" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Selecione sua turma</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Data de Aniversário:</label>
+                        <input type="date" id="registerStudentBirthday" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <h4 class="text-sm font-semibold text-blue-800 mb-2">📝 Seus dados de login serão:</h4>
+                        <div class="text-sm text-blue-700">
+                            <div><strong>Usuário:</strong> <span id="previewUsername" class="font-mono">Será gerado automaticamente</span></div>
+                            <div><strong>Senha:</strong> <span id="previewPassword" class="font-mono">Sua data de aniversário (ddmmaaaa)</span></div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="registerStudent()" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        Criar Minha Conta
+                    </button>
+                </div>
+            `;
+
+            // Popular select de turmas
+            populateStudentClassSelect();
+            
+            // Adicionar listeners para preview
+            document.getElementById('registerStudentName').addEventListener('input', updateLoginPreview);
+            document.getElementById('registerStudentBirthday').addEventListener('change', updateLoginPreview);
+        }
+
+        function populateStudentClassSelect() {
+            const select = document.getElementById('registerStudentClass');
+            if (select) {
+                turmas.forEach(turma => {
+                    const option = document.createElement('option');
+                    option.value = turma;
+                    option.textContent = turma;
+                    select.appendChild(option);
                 });
+            }
+        }
+
+        function updateLoginPreview() {
+            const name = document.getElementById('registerStudentName').value;
+            const birthday = document.getElementById('registerStudentBirthday').value;
+            
+            if (name) {
+                const username = generateUsername(name, birthday);
+                document.getElementById('previewUsername').textContent = username;
+            }
+            
+            if (birthday) {
+                const password = generatePassword(birthday);
+                document.getElementById('previewPassword').textContent = password;
+            }
+        }
+
+        function generateUsername(fullName, birthday) {
+            if (!fullName) return 'Será gerado automaticamente';
+            
+            const names = fullName.toLowerCase().trim().split(' ').filter(n => n.length > 0);
+            if (names.length < 2) return 'Digite nome e sobrenome';
+            
+            const firstName = names[0];
+            const lastName = names[names.length - 1];
+            
+            let dayMonth = '';
+            if (birthday) {
+                const date = new Date(birthday);
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                dayMonth = day + month;
+            } else {
+                dayMonth = 'diames';
+            }
+            
+            return `${firstName}.${lastName}.${dayMonth}`;
+        }
+
+        function generatePassword(birthday) {
+            if (!birthday) return 'Sua data de aniversário (ddmmaaaa)';
+            
+            const date = new Date(birthday);
+            const day = date.getDate().toString().padStart(2, '0');
+            const month = (date.getMonth() + 1).toString().padStart(2, '0');
+            const year = date.getFullYear().toString();
+            
+            return day + month + year;
+        }
+
+        async function registerStudent() {
+            const name = document.getElementById('registerStudentName').value.trim();
+            const turma = document.getElementById('registerStudentClass').value;
+            const birthday = document.getElementById('registerStudentBirthday').value;
+            
+            if (!name || !turma || !birthday) {
+                showNotification('Por favor, preencha todos os campos!', 'warning');
+                return;
+            }
+            
+            const username = generateUsername(name, birthday);
+            const password = generatePassword(birthday);
+            
+            try {
+                // Verificar se já existe no Firebase
+                const existingStudentsSnapshot = await db.collection('students')
+                    .where('username', '==', username)
+                    .get();
                 
-                provider.addScope('email');
-                provider.addScope('profile');
-                
-                console.log('Iniciando login do aluno...');
-                
-                const result = await auth.signInWithPopup(provider);
-                const user = result.user;
-                
-                console.log('Login do aluno realizado:', user.email);
-                
-                // Verificar se o email é do domínio correto
-                if (!user.email.endsWith('@aluno.barueri.br')) {
-                    await auth.signOut();
-                    showNotification('Acesso negado. Use uma conta @aluno.barueri.br', 'error');
+                if (!existingStudentsSnapshot.empty) {
+                    showNotification('Já existe uma conta com esses dados. Tente fazer login.', 'warning');
                     return;
                 }
                 
-                currentUser = user;
+                // Criar conta no Firebase
+                const studentData = {
+                    username: username,
+                    password: password, // Em produção, isso deveria ser hasheado
+                    name: name,
+                    turma: turma,
+                    birthday: birthday,
+                    avatar: gerarAvatarPorNome(name),
+                    moedas: 0,
+                    estrelas: 0,
+                    progresso: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                
+                const docRef = await db.collection('students').add(studentData);
+                const studentId = docRef.id;
+                
+                // Também manter no localStorage para compatibilidade
+                const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+                const newAccount = {
+                    id: studentId,
+                    ...studentData,
+                    createdAt: new Date().toISOString(),
+                    lastLogin: new Date().toISOString()
+                };
+                studentAccounts.push(newAccount);
+                localStorage.setItem('studentAccounts', JSON.stringify(studentAccounts));
+                
+                // Sincronizar com lista de alunos do professor
+                await syncStudentWithProfessorList(newAccount, true);
+                
+                showNotification(`Conta criada com sucesso! Usuário: ${username}`, 'success');
+                
+                // Fazer login automaticamente
+                currentUser = { uid: studentId, displayName: name };
                 currentUserType = 'student';
                 await initializeStudentData();
-                showNotification(`Bem-vindo, ${user.displayName || user.email}!`, 'success');
                 showStudentDashboard();
                 
             } catch (error) {
-                console.error('Erro detalhado no login do aluno:', error);
-                let errorMessage = 'Erro ao fazer login. Tente novamente.';
+                console.error('Erro ao criar conta:', error);
+                showNotification('Erro ao criar conta. Tente novamente.', 'error');
+            }
+        }
+
+        async function processStudentLogin() {
+            const username = document.getElementById('studentUsername').value.trim();
+            const password = document.getElementById('studentPassword').value.trim();
+            
+            if (!username || !password) {
+                showNotification('Por favor, preencha usuário e senha!', 'warning');
+                return;
+            }
+            
+            try {
+                // Verificar credenciais no Firebase
+                const studentsSnapshot = await db.collection('students')
+                    .where('username', '==', username)
+                    .where('password', '==', password)
+                    .get();
                 
-                switch (error.code) {
-                    case 'auth/popup-closed-by-user':
-                        errorMessage = 'Login cancelado pelo usuário.';
-                        break;
-                    case 'auth/popup-blocked':
-                        errorMessage = 'Pop-up bloqueado. Permita pop-ups para este site.';
-                        break;
-                    case 'auth/network-request-failed':
-                        errorMessage = 'Erro de conexão. Verifique sua internet.';
-                        break;
-                    case 'auth/account-exists-with-different-credential':
-                        errorMessage = 'Esta conta já existe com credenciais diferentes.';
-                        break;
-                    case 'auth/cancelled-popup-request':
-                        errorMessage = 'Solicitação de login cancelada.';
-                        break;
-                    case 'auth/operation-not-allowed':
-                        errorMessage = 'Login com Google não está habilitado.';
-                        break;
-                    default:
-                        errorMessage = `Erro: ${error.message}`;
+                if (studentsSnapshot.empty) {
+                    showNotification('Usuário ou senha incorretos!', 'error');
+                    return;
                 }
                 
-                showNotification(errorMessage, 'error');
+                // Login bem-sucedido
+                const studentDoc = studentsSnapshot.docs[0];
+                const studentData = studentDoc.data();
+                const studentId = studentDoc.id;
+                
+                // Atualizar último login no Firebase
+                await db.collection('students').doc(studentId).update({
+                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                // Atualizar localStorage para compatibilidade
+                const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+                const existingIndex = studentAccounts.findIndex(acc => acc.id === studentId);
+                
+                const updatedAccount = {
+                    id: studentId,
+                    ...studentData,
+                    lastLogin: new Date().toISOString()
+                };
+                
+                if (existingIndex !== -1) {
+                    studentAccounts[existingIndex] = updatedAccount;
+                } else {
+                    studentAccounts.push(updatedAccount);
+                }
+                localStorage.setItem('studentAccounts', JSON.stringify(studentAccounts));
+                
+                currentUser = { uid: studentId, displayName: studentData.name };
+                currentUserType = 'student';
+                
+                showNotification(`Bem-vindo, ${studentData.name}!`, 'success');
+                await initializeStudentData();
+                showStudentDashboard();
+                
+            } catch (error) {
+                console.error('Erro ao fazer login:', error);
+                showNotification('Erro ao fazer login. Tente novamente.', 'error');
             }
         }
 
@@ -1224,64 +1450,140 @@
         async function initializeStudentData() {
             if (!currentUser) return;
 
-            const studentRef = db.collection('students').doc(currentUser.uid);
-            const studentDoc = await studentRef.get();
-
-            if (!studentDoc.exists) {
-                // Criar perfil do aluno se não existir
-                const studentData = {
-                    uid: currentUser.uid,
-                    email: currentUser.email,
-                    name: currentUser.displayName || 'Aluno',
-                    avatar: currentUser.photoURL || gerarAvatarPorNome(currentUser.displayName || 'Aluno'),
-                    turma: extractClassFromEmail(currentUser.email),
-                    moedas: 0,
-                    estrelas: 0,
-                    progresso: 0,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                };
-
-                await studentRef.set(studentData);
-            } else {
+            // Buscar dados da conta local
+            const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+            const account = studentAccounts.find(acc => acc.id === currentUser.uid);
+            
+            if (account) {
                 // Atualizar último login
-                await studentRef.update({
-                    lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                });
+                account.lastLogin = new Date().toISOString();
+                localStorage.setItem('studentAccounts', JSON.stringify(studentAccounts));
+                
+                // Sincronizar com a lista de alunos do professor
+                syncStudentWithProfessorList(account);
             }
         }
 
-        function extractClassFromEmail(email) {
-            // Extrair turma do email do aluno (ex: joao.silva.m21@aluno.barueri.br -> M21)
-            const parts = email.split('@')[0].split('.');
-            const lastPart = parts[parts.length - 1];
-            return lastPart.toUpperCase();
+        async function syncStudentWithProfessorList(account, isNewAccount = false) {
+            try {
+                // Sincronizar com Firebase
+                if (currentUser && currentUserType === 'professor') {
+                    const professorId = currentUser.uid;
+                    
+                    // Buscar ou criar aluno na lista do professor
+                    const alunosSnapshot = await db.collection('users').doc(professorId)
+                        .collection('alunos')
+                        .where('accountId', '==', account.id)
+                        .get();
+                    
+                    const alunoData = {
+                        nome: account.name,
+                        turma: account.turma,
+                        aniversario: account.birthday,
+                        moedas: account.moedas || 0,
+                        estrelas: account.estrelas || 0,
+                        progresso: account.progresso || 0,
+                        presente: false,
+                        avatar: account.avatar,
+                        hasAccount: true,
+                        accountId: account.id,
+                        lastLogin: account.lastLogin || new Date().toISOString()
+                    };
+                    
+                    if (alunosSnapshot.empty) {
+                        // Criar novo aluno
+                        await db.collection('users').doc(professorId)
+                            .collection('alunos').add(alunoData);
+                    } else {
+                        // Atualizar aluno existente
+                        const alunoDoc = alunosSnapshot.docs[0];
+                        await db.collection('users').doc(professorId)
+                            .collection('alunos').doc(alunoDoc.id).update(alunoData);
+                    }
+                }
+                
+                // Também manter localStorage para compatibilidade
+                const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+                const existingIndex = alunos.findIndex(a => a.id === account.id || a.accountId === account.id);
+                
+                const alunoLocal = {
+                    id: account.id,
+                    nome: account.name,
+                    turma: account.turma,
+                    aniversario: account.birthday,
+                    moedas: account.moedas || 0,
+                    estrelas: account.estrelas || 0,
+                    progresso: account.progresso || 0,
+                    presente: false,
+                    avatar: account.avatar,
+                    hasAccount: true,
+                    accountId: account.id,
+                    lastLogin: account.lastLogin
+                };
+                
+                if (existingIndex !== -1) {
+                    alunos[existingIndex] = alunoLocal;
+                } else if (isNewAccount) {
+                    alunos.push(alunoLocal);
+                }
+                
+                localStorage.setItem('alunos', JSON.stringify(alunos));
+                
+            } catch (error) {
+                console.error('Erro ao sincronizar com lista do professor:', error);
+            }
         }
 
         async function loadStudentData() {
             if (!currentUser) return;
 
             try {
+                // Buscar dados do Firebase primeiro
                 const studentDoc = await db.collection('students').doc(currentUser.uid).get();
+                let studentData = null;
+                
                 if (studentDoc.exists) {
-                    const data = studentDoc.data();
+                    studentData = studentDoc.data();
                     
+                    // Atualizar localStorage com dados do Firebase
+                    const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+                    const existingIndex = studentAccounts.findIndex(acc => acc.id === currentUser.uid);
+                    
+                    const updatedAccount = {
+                        id: currentUser.uid,
+                        ...studentData
+                    };
+                    
+                    if (existingIndex !== -1) {
+                        studentAccounts[existingIndex] = updatedAccount;
+                    } else {
+                        studentAccounts.push(updatedAccount);
+                    }
+                    localStorage.setItem('studentAccounts', JSON.stringify(studentAccounts));
+                } else {
+                    // Fallback para localStorage se não encontrar no Firebase
+                    const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+                    const account = studentAccounts.find(acc => acc.id === currentUser.uid);
+                    studentData = account;
+                }
+                
+                if (studentData) {
                     // Atualizar interface do aluno
-                    document.getElementById('studentWelcome').textContent = `Bem-vindo, ${data.name}!`;
-                    document.getElementById('studentName').textContent = data.name;
-                    document.getElementById('studentClass').textContent = data.turma;
-                    document.getElementById('studentAvatar').src = data.avatar;
-                    document.getElementById('studentCoins').textContent = data.moedas || 0;
-                    document.getElementById('studentStars').textContent = data.estrelas || 0;
-                    document.getElementById('studentProgress').textContent = `${data.progresso || 0} pts`;
-                    document.getElementById('studentCoinsInStore').textContent = data.moedas || 0;
+                    document.getElementById('studentWelcome').textContent = `Bem-vindo, ${studentData.name}!`;
+                    document.getElementById('studentName').textContent = studentData.name;
+                    document.getElementById('studentClass').textContent = studentData.turma;
+                    document.getElementById('studentAvatar').src = studentData.avatar;
+                    document.getElementById('studentCoins').textContent = studentData.moedas || 0;
+                    document.getElementById('studentStars').textContent = studentData.estrelas || 0;
+                    document.getElementById('studentProgress').textContent = `${studentData.progresso || 0} pts`;
+                    document.getElementById('studentCoinsInStore').textContent = studentData.moedas || 0;
                     
                     // Atualizar título
-                    const titulo = obterTitulo(data.progresso || 0);
+                    const titulo = obterTitulo(studentData.progresso || 0);
                     document.getElementById('studentTitle').textContent = titulo;
                     
                     // Atualizar barra de progresso
-                    const progressPercent = Math.min((data.progresso || 0) / 10, 100);
+                    const progressPercent = Math.min((studentData.progresso || 0) / 10, 100);
                     document.getElementById('studentProgressBar').style.width = progressPercent + '%';
                     
                     // Carregar atividades
@@ -1289,30 +1591,47 @@
                 }
             } catch (error) {
                 console.error('Erro ao carregar dados do aluno:', error);
+                // Fallback para localStorage em caso de erro
+                const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+                const account = studentAccounts.find(acc => acc.id === currentUser.uid);
+                
+                if (account) {
+                    document.getElementById('studentWelcome').textContent = `Bem-vindo, ${account.name}!`;
+                    document.getElementById('studentName').textContent = account.name;
+                    document.getElementById('studentClass').textContent = account.turma;
+                    document.getElementById('studentAvatar').src = account.avatar;
+                    document.getElementById('studentCoins').textContent = account.moedas || 0;
+                    document.getElementById('studentStars').textContent = account.estrelas || 0;
+                    document.getElementById('studentProgress').textContent = `${account.progresso || 0} pts`;
+                    document.getElementById('studentCoinsInStore').textContent = account.moedas || 0;
+                    
+                    const titulo = obterTitulo(account.progresso || 0);
+                    document.getElementById('studentTitle').textContent = titulo;
+                    
+                    const progressPercent = Math.min((account.progresso || 0) / 10, 100);
+                    document.getElementById('studentProgressBar').style.width = progressPercent + '%';
+                    
+                    await loadStudentActivity();
+                }
             }
         }
 
         async function loadStudentActivity() {
             try {
-                const activitiesRef = db.collection('activities')
-                    .where('studentId', '==', currentUser.uid)
-                    .orderBy('timestamp', 'desc')
-                    .limit(10);
+                const activities = JSON.parse(localStorage.getItem('studentActivities') || '[]');
+                const studentActivities = activities
+                    .filter(activity => activity.studentId === currentUser.uid)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                    .slice(0, 10);
                 
-                const snapshot = await activitiesRef.get();
                 const container = document.getElementById('studentActivity');
                 
-                if (snapshot.empty) {
+                if (studentActivities.length === 0) {
                     container.innerHTML = '<p class="text-gray-500 text-center py-8">Nenhuma atividade ainda.</p>';
                     return;
                 }
 
-                const activities = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
-
-                container.innerHTML = activities.map(activity => `
+                container.innerHTML = studentActivities.map(activity => `
                     <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                         <div class="text-2xl">${getActivityIcon(activity.type)}</div>
                         <div class="flex-1">
@@ -1415,55 +1734,98 @@
             if (!currentUser) return;
 
             try {
-                // Buscar dados do produto e do aluno
-                const [productDoc, studentDoc] = await Promise.all([
-                    db.collection('products').doc(productId).get(),
-                    db.collection('students').doc(currentUser.uid).get()
-                ]);
-
-                if (!productDoc.exists || !studentDoc.exists) {
-                    showNotification('Erro ao processar compra.', 'error');
+                // Buscar dados do produto no Firebase
+                const productDoc = await db.collection('products').doc(productId).get();
+                if (!productDoc.exists) {
+                    showNotification('Produto não encontrado.', 'error');
                     return;
                 }
+                const product = { id: productDoc.id, ...productDoc.data() };
+                
+                // Buscar dados do aluno no Firebase
+                const studentDoc = await db.collection('students').doc(currentUser.uid).get();
+                if (!studentDoc.exists) {
+                    showNotification('Dados do aluno não encontrados.', 'error');
+                    return;
+                }
+                const studentData = studentDoc.data();
 
-                const product = productDoc.data();
-                const student = studentDoc.data();
-
-                if ((student.moedas || 0) < product.valor) {
+                if ((studentData.moedas || 0) < product.valor) {
                     showNotification('Moedas insuficientes!', 'warning');
                     return;
                 }
 
-                // Processar compra
+                // Processar compra no Firebase
                 const batch = db.batch();
                 
                 // Atualizar moedas do aluno
-                const studentRef = db.collection('students').doc(currentUser.uid);
-                batch.update(studentRef, {
-                    moedas: (student.moedas || 0) - product.valor
+                const newMoedas = (studentData.moedas || 0) - product.valor;
+                batch.update(db.collection('students').doc(currentUser.uid), {
+                    moedas: newMoedas
+                });
+
+                // Incrementar vendas do produto
+                batch.update(db.collection('products').doc(productId), {
+                    vendas: firebase.firestore.FieldValue.increment(1)
                 });
 
                 // Registrar compra
-                const purchaseRef = db.collection('purchases').doc();
-                batch.set(purchaseRef, {
-                    studentId: currentUser.uid,
-                    studentName: student.name,
-                    productId: productId,
-                    productName: product.nome,
+                const compraRef = db.collection('purchases').doc();
+                batch.set(compraRef, {
+                    alunoId: currentUser.uid,
+                    alunoNome: studentData.name,
+                    produtoId: productId,
+                    produtoNome: product.nome,
                     valor: product.valor,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 // Registrar atividade
-                const activityRef = db.collection('activities').doc();
+                const activityRef = db.collection('students').doc(currentUser.uid)
+                    .collection('activities').doc();
                 batch.set(activityRef, {
-                    studentId: currentUser.uid,
                     type: 'purchase',
                     description: `Comprou "${product.nome}"`,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 await batch.commit();
+
+                // Atualizar localStorage para compatibilidade
+                const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+                const studentIndex = studentAccounts.findIndex(acc => acc.id === currentUser.uid);
+                if (studentIndex !== -1) {
+                    studentAccounts[studentIndex].moedas = newMoedas;
+                    localStorage.setItem('studentAccounts', JSON.stringify(studentAccounts));
+                }
+
+                // Atualizar produtos no localStorage
+                const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
+                const produtoIndex = produtos.findIndex(p => p.id === productId);
+                if (produtoIndex !== -1) {
+                    produtos[produtoIndex].vendas = (produtos[produtoIndex].vendas || 0) + 1;
+                    localStorage.setItem('produtos', JSON.stringify(produtos));
+                }
+
+                // Registrar compra no localStorage
+                const compras = JSON.parse(localStorage.getItem('compras') || '[]');
+                const novaCompra = {
+                    id: compraRef.id,
+                    alunoId: currentUser.uid,
+                    alunoNome: studentData.name,
+                    produtoId: productId,
+                    produtoNome: product.nome,
+                    valor: product.valor,
+                    data: new Date().toLocaleDateString('pt-BR'),
+                    hora: new Date().toLocaleTimeString('pt-BR'),
+                    timestamp: new Date().toISOString()
+                };
+                compras.push(novaCompra);
+                localStorage.setItem('compras', JSON.stringify(compras));
+
+                // Sincronizar com lista de alunos do professor
+                const updatedStudent = { ...studentData, moedas: newMoedas, id: currentUser.uid };
+                await syncStudentWithProfessorList(updatedStudent);
                 
                 showNotification(`Você comprou "${product.nome}"!`, 'success');
                 loadStudentData(); // Atualizar dados do aluno
@@ -1476,16 +1838,17 @@
 
         async function loadStudentRanking() {
             try {
+                // Buscar todas as contas de alunos
+                const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+                
                 // Ranking por moedas
-                const coinsSnapshot = await db.collection('students')
-                    .orderBy('moedas', 'desc')
-                    .limit(10)
-                    .get();
+                const coinsSorted = [...studentAccounts]
+                    .sort((a, b) => (b.moedas || 0) - (a.moedas || 0))
+                    .slice(0, 10);
 
                 const coinsContainer = document.getElementById('rankingCoins');
-                const coinsRanking = coinsSnapshot.docs.map((doc, index) => {
-                    const data = doc.data();
-                    const isCurrentUser = doc.id === currentUser.uid;
+                const coinsRanking = coinsSorted.map((student, index) => {
+                    const isCurrentUser = student.id === currentUser.uid;
                     
                     return `
                         <div class="flex items-center justify-between p-3 ${isCurrentUser ? 'bg-emerald-100 border-2 border-emerald-300' : 'bg-gray-50'} rounded-lg">
@@ -1494,12 +1857,12 @@
                                     ${index + 1}
                                 </div>
                                 <div>
-                                    <p class="font-medium ${isCurrentUser ? 'text-emerald-800' : 'text-gray-800'}">${isCurrentUser ? 'Você' : data.name}</p>
-                                    <p class="text-xs text-gray-500">${data.turma}</p>
+                                    <p class="font-medium ${isCurrentUser ? 'text-emerald-800' : 'text-gray-800'}">${isCurrentUser ? 'Você' : student.name}</p>
+                                    <p class="text-xs text-gray-500">${student.turma}</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <div class="font-bold text-amber-600">💰 ${data.moedas || 0}</div>
+                                <div class="font-bold text-amber-600">💰 ${student.moedas || 0}</div>
                             </div>
                         </div>
                     `;
@@ -1508,15 +1871,13 @@
                 coinsContainer.innerHTML = coinsRanking;
 
                 // Ranking por progresso
-                const progressSnapshot = await db.collection('students')
-                    .orderBy('progresso', 'desc')
-                    .limit(10)
-                    .get();
+                const progressSorted = [...studentAccounts]
+                    .sort((a, b) => (b.progresso || 0) - (a.progresso || 0))
+                    .slice(0, 10);
 
                 const progressContainer = document.getElementById('rankingProgress');
-                const progressRanking = progressSnapshot.docs.map((doc, index) => {
-                    const data = doc.data();
-                    const isCurrentUser = doc.id === currentUser.uid;
+                const progressRanking = progressSorted.map((student, index) => {
+                    const isCurrentUser = student.id === currentUser.uid;
                     
                     return `
                         <div class="flex items-center justify-between p-3 ${isCurrentUser ? 'bg-emerald-100 border-2 border-emerald-300' : 'bg-gray-50'} rounded-lg">
@@ -1525,12 +1886,12 @@
                                     ${index + 1}
                                 </div>
                                 <div>
-                                    <p class="font-medium ${isCurrentUser ? 'text-emerald-800' : 'text-gray-800'}">${isCurrentUser ? 'Você' : data.name}</p>
-                                    <p class="text-xs text-gray-500">${data.turma}</p>
+                                    <p class="font-medium ${isCurrentUser ? 'text-emerald-800' : 'text-gray-800'}">${isCurrentUser ? 'Você' : student.name}</p>
+                                    <p class="text-xs text-gray-500">${student.turma}</p>
                                 </div>
                             </div>
                             <div class="text-right">
-                                <div class="font-bold text-blue-600">📈 ${data.progresso || 0} pts</div>
+                                <div class="font-bold text-blue-600">📈 ${student.progresso || 0} pts</div>
                             </div>
                         </div>
                     `;
@@ -2063,6 +2424,9 @@
                                 <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full ${aluno.presente ? 'bg-emerald-500' : 'bg-slate-400'} border-2 border-white shadow-sm flex items-center justify-center">
                                     <i class="fas ${aluno.presente ? 'fa-check' : 'fa-times'} text-white text-xs"></i>
                                 </div>
+                                
+                                <!-- Indicador de Conta Criada -->
+                                ${aluno.hasAccount ? '<div class="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-blue-500 border-2 border-white shadow-sm flex items-center justify-center" title="Aluno tem conta criada"><i class="fas fa-user text-white text-xs"></i></div>' : ''}
                             </div>
                             <div class="flex-1">
                                 <h3 class="text-xl font-bold text-slate-800 mb-1 leading-tight">${aluno.nome}</h3>
@@ -2289,6 +2653,9 @@
                                 <div class="absolute -bottom-1 -right-1 w-6 h-6 rounded-full ${aluno.presente ? 'bg-emerald-500' : 'bg-slate-400'} border-2 border-white shadow-sm flex items-center justify-center">
                                     <i class="fas ${aluno.presente ? 'fa-check' : 'fa-times'} text-white text-xs"></i>
                                 </div>
+                                
+                                <!-- Indicador de Conta Criada -->
+                                ${aluno.hasAccount ? '<div class="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-blue-500 border-2 border-white shadow-sm flex items-center justify-center" title="Aluno tem conta criada"><i class="fas fa-user text-white text-xs"></i></div>' : ''}
                             </div>
                             <div class="flex-1">
                                 <h3 class="text-xl font-bold text-slate-800 mb-1 leading-tight">${aluno.nome}</h3>
@@ -2854,12 +3221,21 @@
                 return;
             }
 
-            const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
-            const aluno = alunos.find(a => a.id === alunoId);
+            // Buscar primeiro nas contas de alunos, depois na lista geral
+            const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+            const studentAccount = studentAccounts.find(acc => acc.id === alunoId);
             
-            if (!aluno) return;
+            let moedasAluno = 0;
+            if (studentAccount) {
+                moedasAluno = studentAccount.moedas || 0;
+            } else {
+                const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
+                const aluno = alunos.find(a => a.id === alunoId);
+                if (aluno) {
+                    moedasAluno = aluno.moedas || 0;
+                }
+            }
 
-            const moedasAluno = aluno.moedas || 0;
             moedasSpan.textContent = moedasAluno;
             
             if (moedasAluno >= produto.valor) {
@@ -2884,22 +3260,44 @@
 
             if (!alunoId || !produto) return;
 
+            // Buscar primeiro nas contas de alunos, depois na lista geral
+            const studentAccounts = JSON.parse(localStorage.getItem('studentAccounts') || '[]');
+            const studentIndex = studentAccounts.findIndex(acc => acc.id === alunoId);
+            
             const alunos = JSON.parse(localStorage.getItem('alunos') || '[]');
             const alunoIndex = alunos.findIndex(a => a.id === alunoId);
             
-            if (alunoIndex === -1) return;
-
-            const aluno = alunos[alunoIndex];
+            let moedasAtual = 0;
+            let nomeAluno = '';
+            
+            // Determinar moedas atuais e nome
+            if (studentIndex !== -1) {
+                moedasAtual = studentAccounts[studentIndex].moedas || 0;
+                nomeAluno = studentAccounts[studentIndex].name;
+            } else if (alunoIndex !== -1) {
+                moedasAtual = alunos[alunoIndex].moedas || 0;
+                nomeAluno = alunos[alunoIndex].nome;
+            } else {
+                showNotification('Aluno não encontrado!', 'error');
+                return;
+            }
             
             // Verificar se ainda tem moedas suficientes
-            if ((aluno.moedas || 0) < produto.valor) {
+            if (moedasAtual < produto.valor) {
                 showNotification('Aluno não possui moedas suficientes!', 'error');
                 return;
             }
 
-            // Deduzir moedas do aluno
-            alunos[alunoIndex].moedas = (aluno.moedas || 0) - produto.valor;
-            localStorage.setItem('alunos', JSON.stringify(alunos));
+            // Deduzir moedas do aluno (ambas as listas)
+            if (studentIndex !== -1) {
+                studentAccounts[studentIndex].moedas = moedasAtual - produto.valor;
+                localStorage.setItem('studentAccounts', JSON.stringify(studentAccounts));
+            }
+            
+            if (alunoIndex !== -1) {
+                alunos[alunoIndex].moedas = moedasAtual - produto.valor;
+                localStorage.setItem('alunos', JSON.stringify(alunos));
+            }
 
             // Incrementar vendas do produto
             const produtos = JSON.parse(localStorage.getItem('produtos') || '[]');
@@ -2913,18 +3311,33 @@
             const compras = JSON.parse(localStorage.getItem('compras') || '[]');
             const novaCompra = {
                 id: Date.now().toString(),
-                alunoId: aluno.id,
-                alunoNome: aluno.nome,
+                alunoId: alunoId,
+                alunoNome: nomeAluno,
                 produtoId: produto.id,
                 produtoNome: produto.nome,
                 valor: produto.valor,
                 data: new Date().toLocaleDateString('pt-BR'),
-                hora: new Date().toLocaleTimeString('pt-BR')
+                hora: new Date().toLocaleTimeString('pt-BR'),
+                timestamp: new Date().toISOString()
             };
             compras.push(novaCompra);
             localStorage.setItem('compras', JSON.stringify(compras));
 
-            showNotification(`${aluno.nome} comprou "${produto.nome}" por ${produto.valor} moedas!`, 'success');
+            // Registrar atividade se o aluno tem conta
+            if (studentIndex !== -1) {
+                const activities = JSON.parse(localStorage.getItem('studentActivities') || '[]');
+                const newActivity = {
+                    id: Date.now().toString(),
+                    studentId: alunoId,
+                    type: 'purchase',
+                    description: `Comprou "${produto.nome}" (via professor)`,
+                    timestamp: new Date().toISOString()
+                };
+                activities.push(newActivity);
+                localStorage.setItem('studentActivities', JSON.stringify(activities));
+            }
+
+            showNotification(`${nomeAluno} comprou "${produto.nome}" por ${produto.valor} moedas!`, 'success');
             
             closeModal('modalVenda');
             renderLoja();
@@ -3703,5 +4116,5 @@
             input.click();
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'980d882f4173cafe',t:'MTc1ODE2Mzc4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'981041b5b55d4360',t:'MTc1ODE5MjM1Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
