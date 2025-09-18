@@ -1023,14 +1023,14 @@
     <script>
         // Firebase Configuration
         const firebaseConfig = {
-    apiKey: "AIzaSyA4Xs1M_pZTEPcIKTCiwfTB6VRckdRa3tk",
-    authDomain: "gestao-maker.firebaseapp.com",
-    projectId: "gestao-maker",
-    storageBucket: "gestao-maker.firebasestorage.app",
-    messagingSenderId: "869350644479",
-    appId: "1:869350644479:web:81b5e07d86d8130bf88aca",
-    measurementId: "G-HK1ZS44HT9"
-};
+            apiKey: "AIzaSyA4Xs1M_pZTEPcIKTCiwfTB6VRckdRa3tk",
+            authDomain: "gestao-maker.firebaseapp.com",
+            projectId: "gestao-maker",
+            storageBucket: "gestao-maker.firebasestorage.app",
+            messagingSenderId: "869350644479",
+            appId: "1:869350644479:web:81b5e07d86d8130bf88aca",
+            measurementId: "G-HK1ZS44HT9"
+        };
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -1060,55 +1060,69 @@
         async function loginProfessor() {
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                provider.setCustomParameters({
-                    hd: 'barueri.br' // Restringir para domínio do professor
-                });
+                // Remover restrição de domínio para teste
+                provider.addScope('email');
+                provider.addScope('profile');
                 
                 const result = await auth.signInWithPopup(provider);
                 const user = result.user;
                 
-                // Verificar se é um email de professor válido
-                if (!user.email.endsWith('@barueri.br')) {
-                    await auth.signOut();
-                    showNotification('Acesso restrito a professores (@barueri.br)', 'error');
-                    return;
-                }
-
+                console.log('Login realizado:', user.email);
+                
+                // Para teste, aceitar qualquer email do Google
+                // Você pode adicionar a verificação de domínio depois
                 currentUser = user;
                 currentUserType = 'professor';
+                showNotification(`Bem-vindo, ${user.displayName || user.email}!`, 'success');
                 showProfessorDashboard();
                 
             } catch (error) {
                 console.error('Erro no login do professor:', error);
-                showNotification('Erro ao fazer login. Tente novamente.', 'error');
+                let errorMessage = 'Erro ao fazer login. Tente novamente.';
+                
+                if (error.code === 'auth/popup-closed-by-user') {
+                    errorMessage = 'Login cancelado pelo usuário.';
+                } else if (error.code === 'auth/popup-blocked') {
+                    errorMessage = 'Pop-up bloqueado. Permita pop-ups para este site.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = 'Erro de conexão. Verifique sua internet.';
+                }
+                
+                showNotification(errorMessage, 'error');
             }
         }
 
         async function loginAluno() {
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                provider.setCustomParameters({
-                    hd: 'aluno.barueri.br' // Restringir para domínio do aluno
-                });
+                provider.addScope('email');
+                provider.addScope('profile');
                 
                 const result = await auth.signInWithPopup(provider);
                 const user = result.user;
                 
-                // Verificar se é um email de aluno válido
-                if (!user.email.endsWith('@aluno.barueri.br')) {
-                    await auth.signOut();
-                    showNotification('Acesso restrito a alunos (@aluno.barueri.br)', 'error');
-                    return;
-                }
-
+                console.log('Login do aluno realizado:', user.email);
+                
+                // Para teste, aceitar qualquer email do Google
                 currentUser = user;
                 currentUserType = 'student';
                 await initializeStudentData();
+                showNotification(`Bem-vindo, ${user.displayName || user.email}!`, 'success');
                 showStudentDashboard();
                 
             } catch (error) {
                 console.error('Erro no login do aluno:', error);
-                showNotification('Erro ao fazer login. Tente novamente.', 'error');
+                let errorMessage = 'Erro ao fazer login. Tente novamente.';
+                
+                if (error.code === 'auth/popup-closed-by-user') {
+                    errorMessage = 'Login cancelado pelo usuário.';
+                } else if (error.code === 'auth/popup-blocked') {
+                    errorMessage = 'Pop-up bloqueado. Permita pop-ups para este site.';
+                } else if (error.code === 'auth/network-request-failed') {
+                    errorMessage = 'Erro de conexão. Verifique sua internet.';
+                }
+                
+                showNotification(errorMessage, 'error');
             }
         }
 
@@ -1486,24 +1500,26 @@
             // Monitor auth state
             auth.onAuthStateChanged(user => {
                 if (user) {
-                    // Usuário logado - determinar tipo baseado no email
-                    if (user.email.endsWith('@barueri.br')) {
-                        currentUser = user;
+                    console.log('Estado de autenticação mudou:', user.email);
+                    // Para teste, aceitar qualquer usuário logado
+                    currentUser = user;
+                    
+                    // Se não temos um tipo definido, assumir professor por padrão
+                    if (!currentUserType) {
                         currentUserType = 'professor';
                         showProfessorDashboard();
-                    } else if (user.email.endsWith('@aluno.barueri.br')) {
-                        currentUser = user;
-                        currentUserType = 'student';
+                    } else if (currentUserType === 'student') {
                         initializeStudentData().then(() => {
                             showStudentDashboard();
                         });
                     } else {
-                        // Email não autorizado
-                        auth.signOut();
-                        showLoginScreen();
+                        showProfessorDashboard();
                     }
                 } else {
                     // Usuário não logado
+                    console.log('Usuário não está logado');
+                    currentUser = null;
+                    currentUserType = null;
                     showLoginScreen();
                 }
             });
@@ -3628,5 +3644,5 @@
             input.click();
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'980ce2eee6cbdf57',t:'MTc1ODE1NzAxNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'980d5df8a739cadb',t:'MTc1ODE2MjA1Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
