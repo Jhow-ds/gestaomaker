@@ -1060,32 +1060,61 @@
         async function loginProfessor() {
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
-                // Remover restrição de domínio para teste
+                
+                // Configurações específicas para professores
+                provider.setCustomParameters({
+                    'prompt': 'select_account',
+                    'hd': 'educbarueri.sp.gov.br' // Domínio específico para professores
+                });
+                
+                // Adicionar scopes necessários
                 provider.addScope('email');
                 provider.addScope('profile');
+                
+                console.log('Iniciando login do professor...');
                 
                 const result = await auth.signInWithPopup(provider);
                 const user = result.user;
                 
-                console.log('Login realizado:', user.email);
+                console.log('Login do professor realizado:', user.email);
                 
-                // Para teste, aceitar qualquer email do Google
-                // Você pode adicionar a verificação de domínio depois
+                // Verificar se o email é do domínio correto
+                if (!user.email.endsWith('@educbarueri.sp.gov.br')) {
+                    await auth.signOut();
+                    showNotification('Acesso negado. Use uma conta @educbarueri.sp.gov.br', 'error');
+                    return;
+                }
+                
                 currentUser = user;
                 currentUserType = 'professor';
-                showNotification(`Bem-vindo, ${user.displayName || user.email}!`, 'success');
+                showNotification(`Bem-vindo, Professor ${user.displayName || user.email}!`, 'success');
                 showProfessorDashboard();
                 
             } catch (error) {
-                console.error('Erro no login do professor:', error);
+                console.error('Erro detalhado no login do professor:', error);
                 let errorMessage = 'Erro ao fazer login. Tente novamente.';
                 
-                if (error.code === 'auth/popup-closed-by-user') {
-                    errorMessage = 'Login cancelado pelo usuário.';
-                } else if (error.code === 'auth/popup-blocked') {
-                    errorMessage = 'Pop-up bloqueado. Permita pop-ups para este site.';
-                } else if (error.code === 'auth/network-request-failed') {
-                    errorMessage = 'Erro de conexão. Verifique sua internet.';
+                switch (error.code) {
+                    case 'auth/popup-closed-by-user':
+                        errorMessage = 'Login cancelado pelo usuário.';
+                        break;
+                    case 'auth/popup-blocked':
+                        errorMessage = 'Pop-up bloqueado. Permita pop-ups para este site.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Erro de conexão. Verifique sua internet.';
+                        break;
+                    case 'auth/account-exists-with-different-credential':
+                        errorMessage = 'Esta conta já existe com credenciais diferentes.';
+                        break;
+                    case 'auth/cancelled-popup-request':
+                        errorMessage = 'Solicitação de login cancelada.';
+                        break;
+                    case 'auth/operation-not-allowed':
+                        errorMessage = 'Login com Google não está habilitado.';
+                        break;
+                    default:
+                        errorMessage = `Erro: ${error.message}`;
                 }
                 
                 showNotification(errorMessage, 'error');
@@ -1095,15 +1124,30 @@
         async function loginAluno() {
             try {
                 const provider = new firebase.auth.GoogleAuthProvider();
+                
+                // Configurações específicas para alunos
+                provider.setCustomParameters({
+                    'prompt': 'select_account',
+                    'hd': 'aluno.barueri.br' // Domínio específico para alunos
+                });
+                
                 provider.addScope('email');
                 provider.addScope('profile');
+                
+                console.log('Iniciando login do aluno...');
                 
                 const result = await auth.signInWithPopup(provider);
                 const user = result.user;
                 
                 console.log('Login do aluno realizado:', user.email);
                 
-                // Para teste, aceitar qualquer email do Google
+                // Verificar se o email é do domínio correto
+                if (!user.email.endsWith('@aluno.barueri.br')) {
+                    await auth.signOut();
+                    showNotification('Acesso negado. Use uma conta @aluno.barueri.br', 'error');
+                    return;
+                }
+                
                 currentUser = user;
                 currentUserType = 'student';
                 await initializeStudentData();
@@ -1111,15 +1155,30 @@
                 showStudentDashboard();
                 
             } catch (error) {
-                console.error('Erro no login do aluno:', error);
+                console.error('Erro detalhado no login do aluno:', error);
                 let errorMessage = 'Erro ao fazer login. Tente novamente.';
                 
-                if (error.code === 'auth/popup-closed-by-user') {
-                    errorMessage = 'Login cancelado pelo usuário.';
-                } else if (error.code === 'auth/popup-blocked') {
-                    errorMessage = 'Pop-up bloqueado. Permita pop-ups para este site.';
-                } else if (error.code === 'auth/network-request-failed') {
-                    errorMessage = 'Erro de conexão. Verifique sua internet.';
+                switch (error.code) {
+                    case 'auth/popup-closed-by-user':
+                        errorMessage = 'Login cancelado pelo usuário.';
+                        break;
+                    case 'auth/popup-blocked':
+                        errorMessage = 'Pop-up bloqueado. Permita pop-ups para este site.';
+                        break;
+                    case 'auth/network-request-failed':
+                        errorMessage = 'Erro de conexão. Verifique sua internet.';
+                        break;
+                    case 'auth/account-exists-with-different-credential':
+                        errorMessage = 'Esta conta já existe com credenciais diferentes.';
+                        break;
+                    case 'auth/cancelled-popup-request':
+                        errorMessage = 'Solicitação de login cancelada.';
+                        break;
+                    case 'auth/operation-not-allowed':
+                        errorMessage = 'Login com Google não está habilitado.';
+                        break;
+                    default:
+                        errorMessage = `Erro: ${error.message}`;
                 }
                 
                 showNotification(errorMessage, 'error');
@@ -3644,5 +3703,5 @@
             input.click();
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'980d5df8a739cadb',t:'MTc1ODE2MjA1Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'980d882f4173cafe',t:'MTc1ODE2Mzc4Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
